@@ -41,7 +41,13 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
+I2S_HandleTypeDef hi2s3;
+
 SPI_HandleTypeDef hspi1;
+
+TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN PV */
 
@@ -52,13 +58,115 @@ FIL file;
 WORD bytes_written;
 WORD bytes_read;
 
+extern const uint8_t rawAudio[123200];
+uint16_t sample[2];
+unsigned sam = 0;
+int init = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_I2S3_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Instance == TIM4)
+	{
+		while(HAL_I2S_GetState(&hi2s3) == HAL_I2S_STATE_BUSY_TX)
+		{}
+		sample[0] = rawAudio[sam];
+		sample[1] = rawAudio[sam];
+		HAL_I2S_Transmit(&hi2s3, sample, 2, 100);
+
+		if(sam<123200-1)
+		{
+			sam++;
+		}
+		else
+		{
+			sam=0;
+		}
+	}
+}
+
+void CS43_Start()
+{
+	uint8_t data[1];
+	  data[0] = 0x01;
+	  HAL_StatusTypeDef status;
+
+	  __HAL_UNLOCK(&hi2s3);
+	  __HAL_I2S_ENABLE(&hi2s3);
+
+	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_4, GPIO_PIN_SET);
+
+	  status = HAL_I2C_GetState(&hi2c1) ;
+
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x02, 1, data, 1, 100)) != HAL_OK);
+
+	  data[0] = 0x99;
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x00, 1, data, 1, 100)) != HAL_OK);
+	  data[0] = 0x99;
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x00, 1, data, 1, 100)) != HAL_OK);
+
+	  data[0]=0x80;
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x47, 1, data, 1, 100)) != HAL_OK);
+
+	  while ((status = HAL_I2C_Mem_Read(&hi2c1, 0x94, 0x32, 1, data, 1, 100)) != HAL_OK);
+		data[0] |= 0x80;
+		while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x32, 1, data, 1, 100)) != HAL_OK);
+
+		while ((status = HAL_I2C_Mem_Read(&hi2c1, 0x94, 0x32, 1, data, 1, 100)) != HAL_OK);
+		data[0] &= ~(0x80);
+		while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x32, 1, data, 1, 100)) != HAL_OK);
+
+		data[0] = 0;
+		while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x00, 1, data, 1, 100)) != HAL_OK);
+
+		data[0] = 0x9E;
+		while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x02, 1, data, 1, 100)) != HAL_OK);
+
+	  data[0] = 175;
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x04, 1, data, 1, 100)) != HAL_OK);
+
+	  data[0]=(1<<7);
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x05, 1, data, 1, 100)) != HAL_OK);
+
+	  while ((status = HAL_I2C_Mem_Read(&hi2c1, 0x94, 0x06, 1, data, 1, 100)) != HAL_OK);
+	  data[0] &= (1 << 5);
+	  data[0] &= ~(1 << 7);
+	  data[0] &= ~(1 << 6);
+	  data[0] &= ~(1 << 4);
+	  data[0] &= ~(1 << 2);
+	  data[0] |= (1 << 2);
+	  data[0] |=  (3 << 0);
+
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x06, 1, data, 1, 100)) != HAL_OK);
+
+	  data[0]=0x02;
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0E, 1, data, 1, 100)) != HAL_OK);
+
+	  data[0] = 4;
+	    while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0e, 1, data, 1, 100)) != HAL_OK);
+
+	  data[0] = 0x00;
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x14, 1, data, 1, 100)) != HAL_OK);
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x15, 1, data, 1, 100)) != HAL_OK);
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x1A, 1, data, 1, 100)) != HAL_OK);
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x1B, 1, data, 1, 100)) != HAL_OK);
+
+	  data[0]= 0xAF;
+	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x04, 1, data, 1, 100)) != HAL_OK);
+
+	  HAL_TIM_Base_Start_IT(&htim4);
+}
+
 
 /* USER CODE END PFP */
 
@@ -96,6 +204,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_SPI1_Init();
+  MX_I2C1_Init();
+  MX_I2S3_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, 0);
@@ -103,6 +214,7 @@ int main(void)
 	fresult = f_mount(&FatFs, "", 0);
 	fresult = f_open(&file, "write.txt", FA_OPEN_ALWAYS | FA_WRITE);
 	volatile int len = 0;
+
 
     FRESULT res;
     DIR dir;
@@ -128,6 +240,7 @@ int main(void)
     volatile int v1 = 1;
 
 
+    CS43_Start();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -135,13 +248,13 @@ int main(void)
   while (1)
   {
 
-	  v1 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14);
+	  /*v1 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14);
 	  if(!v1)
 	  {
 		  HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_14);
 	  }
 	  v1=1;
-	  HAL_Delay(500);
+	  HAL_Delay(500);*/
 
     /* USER CODE END WHILE */
 
@@ -158,6 +271,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage 
   */
@@ -190,6 +304,81 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2S;
+  PeriphClkInitStruct.PLLI2S.PLLI2SN = 192;
+  PeriphClkInitStruct.PLLI2S.PLLI2SR = 2;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief I2S3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2S3_Init(void)
+{
+
+  /* USER CODE BEGIN I2S3_Init 0 */
+
+  /* USER CODE END I2S3_Init 0 */
+
+  /* USER CODE BEGIN I2S3_Init 1 */
+
+  /* USER CODE END I2S3_Init 1 */
+  hi2s3.Instance = SPI3;
+  hi2s3.Init.Mode = I2S_MODE_MASTER_TX;
+  hi2s3.Init.Standard = I2S_STANDARD_PHILIPS;
+  hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
+  hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
+  hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_16K;
+  hi2s3.Init.CPOL = I2S_CPOL_LOW;
+  hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
+  hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_ENABLE;
+  if (HAL_I2S_Init(&hi2s3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2S3_Init 2 */
+
+  /* USER CODE END I2S3_Init 2 */
+
 }
 
 /**
@@ -231,6 +420,51 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 249;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 19;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -244,10 +478,11 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15 
-                          |GPIO_PIN_7, GPIO_PIN_RESET);
+                          |GPIO_PIN_4|GPIO_PIN_7, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : K7_Pin K6_Pin */
   GPIO_InitStruct.Pin = K7_Pin|K6_Pin;
@@ -264,13 +499,21 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PD12 PD13 PD14 PD15 
-                           PD7 */
+                           PD4 PD7 */
   GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15 
-                          |GPIO_PIN_7;
+                          |GPIO_PIN_4|GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 }
 
