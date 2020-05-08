@@ -1,0 +1,6 @@
+file_system.c:14:9:scanDir	64	static
+file_system.c:21:9:openFile	32	static
+file_system.c:50:9:closeFile	24	static
+file_system.c:56:15:setUp	48	static
+file_system.c:111:9:readData	32	static
+file_system.c:118:9:fatInit	24	static

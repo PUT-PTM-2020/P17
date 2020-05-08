@@ -24,6 +24,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "ff.h"
+#include "CS43.h"
+#include "file_system.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +46,7 @@
 I2C_HandleTypeDef hi2c1;
 
 I2S_HandleTypeDef hi2s3;
+DMA_HandleTypeDef hdma_spi3_tx;
 
 SPI_HandleTypeDef hspi1;
 
@@ -54,20 +57,28 @@ TIM_HandleTypeDef htim4;
 char buffer[256];
 static FATFS FatFs;
 FRESULT fresult;
-FIL file;
+FIL mfile;
 WORD bytes_written;
 WORD bytes_read;
 
-extern const uint8_t rawAudio[123200];
+//extern const uint8_t rawAudio[123200];
+
+#define SM	44100
+
+uint16_t audio[SM];
 uint16_t sample[2];
+
 unsigned sam = 0;
-int init = 0;
+
+volatile unsigned long filesize = 0;
+unsigned chs = 1;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2S3_Init(void);
@@ -78,94 +89,54 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM4)
 	{
-		while(HAL_I2S_GetState(&hi2s3) == HAL_I2S_STATE_BUSY_TX)
-		{}
-		sample[0] = rawAudio[sam];
-		sample[1] = rawAudio[sam];
-		HAL_I2S_Transmit(&hi2s3, sample, 2, 100);
-
-		if(sam<123200-1)
+		if(filesize>0)
 		{
-			sam++;
-		}
-		else
-		{
-			sam=0;
+			while(HAL_I2S_GetState(&hi2s3) == HAL_I2S_STATE_BUSY_TX)
+			{}
+			if(chs==1)
+			{
+				sample[0] = audio[sam];
+				sample[1] = audio[sam];
+				sam++;
+			}
+			else if(chs==2)
+			{
+				sample[0] = audio[sam];
+				sample[1] = audio[sam+1];
+				sam+=2;
+			}
+			if(sam>=SM)
+			{
+				sam=0;
+				filesize-=SM;
+				fresult = readData(audio, &mfile,SM);
+			}
+			if(sam<filesize)
+			{
+				HAL_I2S_Transmit(&hi2s3, sample, 2, 100);
+				//HAL_I2S_Transmit_DMA(&hi2s3, sample, 2);
+			}
+			else
+			{
+				filesize = 0;
+				closeFile(&mfile);
+			}
+			/*if(filesize<44100)
+			{
+				HAL_I2S_Transmit_DMA(&hi2s3, audio, filesize);
+				filesize = 0;
+			}
+			else
+			{
+				HAL_I2S_Transmit_DMA(&hi2s3, audio, 44100);
+				filesize -= 44100;
+				readData(audio, &mfile,SM);
+			}*/
 		}
 	}
 }
 
-void CS43_Start()
-{
-	uint8_t data[1];
-	  data[0] = 0x01;
-	  HAL_StatusTypeDef status;
 
-	  __HAL_UNLOCK(&hi2s3);
-	  __HAL_I2S_ENABLE(&hi2s3);
-
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_4, GPIO_PIN_SET);
-
-	  status = HAL_I2C_GetState(&hi2c1) ;
-
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x02, 1, data, 1, 100)) != HAL_OK);
-
-	  data[0] = 0x99;
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x00, 1, data, 1, 100)) != HAL_OK);
-	  data[0] = 0x99;
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x00, 1, data, 1, 100)) != HAL_OK);
-
-	  data[0]=0x80;
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x47, 1, data, 1, 100)) != HAL_OK);
-
-	  while ((status = HAL_I2C_Mem_Read(&hi2c1, 0x94, 0x32, 1, data, 1, 100)) != HAL_OK);
-		data[0] |= 0x80;
-		while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x32, 1, data, 1, 100)) != HAL_OK);
-
-		while ((status = HAL_I2C_Mem_Read(&hi2c1, 0x94, 0x32, 1, data, 1, 100)) != HAL_OK);
-		data[0] &= ~(0x80);
-		while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x32, 1, data, 1, 100)) != HAL_OK);
-
-		data[0] = 0;
-		while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x00, 1, data, 1, 100)) != HAL_OK);
-
-		data[0] = 0x9E;
-		while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x02, 1, data, 1, 100)) != HAL_OK);
-
-	  data[0] = 175;
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x04, 1, data, 1, 100)) != HAL_OK);
-
-	  data[0]=(1<<7);
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x05, 1, data, 1, 100)) != HAL_OK);
-
-	  while ((status = HAL_I2C_Mem_Read(&hi2c1, 0x94, 0x06, 1, data, 1, 100)) != HAL_OK);
-	  data[0] &= (1 << 5);
-	  data[0] &= ~(1 << 7);
-	  data[0] &= ~(1 << 6);
-	  data[0] &= ~(1 << 4);
-	  data[0] &= ~(1 << 2);
-	  data[0] |= (1 << 2);
-	  data[0] |=  (3 << 0);
-
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x06, 1, data, 1, 100)) != HAL_OK);
-
-	  data[0]=0x02;
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0E, 1, data, 1, 100)) != HAL_OK);
-
-	  data[0] = 4;
-	    while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0e, 1, data, 1, 100)) != HAL_OK);
-
-	  data[0] = 0x00;
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x14, 1, data, 1, 100)) != HAL_OK);
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x15, 1, data, 1, 100)) != HAL_OK);
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x1A, 1, data, 1, 100)) != HAL_OK);
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x1B, 1, data, 1, 100)) != HAL_OK);
-
-	  data[0]= 0xAF;
-	  while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x04, 1, data, 1, 100)) != HAL_OK);
-
-	  HAL_TIM_Base_Start_IT(&htim4);
-}
 
 
 /* USER CODE END PFP */
@@ -203,13 +174,27 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_SPI1_Init();
   MX_I2C1_Init();
   MX_I2S3_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, 0);
+  char* ts = "au.wav";
+
+
+
+
+  fresult = fatInit(&FatFs);
+  HAL_Delay(1);
+  fresult = openFile(ts, &mfile);
+  HAL_Delay(1);
+  filesize = setUp(&mfile, &hi2s3, &chs);
+  HAL_Delay(1);
+
+
+	/*HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, 0);
 
 	fresult = f_mount(&FatFs, "", 0);
 	fresult = f_open(&file, "write.txt", FA_OPEN_ALWAYS | FA_WRITE);
@@ -237,10 +222,17 @@ int main(void)
 		}
     }
     fresult = f_close (&file);
-    volatile int v1 = 1;
+    volatile int v1 = 1;*/
 
 
-    CS43_Start();
+  	readData(audio,&mfile,SM);
+    CS43_Start(&hi2c1);
+
+
+
+    HAL_TIM_Base_Start_IT(&htim4);
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -370,7 +362,7 @@ static void MX_I2S3_Init(void)
   hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_16K;
   hi2s3.Init.CPOL = I2S_CPOL_LOW;
   hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
-  hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_ENABLE;
+  hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
   if (HAL_I2S_Init(&hi2s3) != HAL_OK)
   {
     Error_Handler();
@@ -438,9 +430,9 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 249;
+  htim4.Init.Prescaler = 41;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 19;
+  htim4.Init.Period = 1;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -461,6 +453,22 @@ static void MX_TIM4_Init(void)
   /* USER CODE BEGIN TIM4_Init 2 */
 
   /* USER CODE END TIM4_Init 2 */
+
+}
+
+/** 
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void) 
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
 
 }
 
