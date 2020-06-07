@@ -77,3 +77,25 @@ void CS43_Start(I2C_HandleTypeDef* hi2c1)
 
 
 }
+
+void setVolume(I2C_HandleTypeDef* hi2c1, uint8_t v)
+{
+	uint8_t data[1];
+	int tVol = (v-50) * (127/50);
+	HAL_StatusTypeDef status;
+
+	data[0] = tVol;
+	while ((status = HAL_I2C_Mem_Write(hi2c1, 0x94, 0x14, 1, data, 1, 100)) != HAL_OK);
+	while ((status = HAL_I2C_Mem_Write(hi2c1, 0x94, 0x15, 1, data, 1, 100)) != HAL_OK);
+
+	data[0] = (((v) > 100)? 24:((uint8_t)((((v) * 48) / 100) - 24)));
+
+	while ((status = HAL_I2C_Mem_Write(hi2c1, 0x94, 0x20, 1, data, 1, 100)) != HAL_OK);
+	while ((status = HAL_I2C_Mem_Write(hi2c1, 0x94, 0x21, 1, data, 1, 100)) != HAL_OK);
+}
+
+int mute(I2C_HandleTypeDef* hi2c1)
+{
+
+}
+

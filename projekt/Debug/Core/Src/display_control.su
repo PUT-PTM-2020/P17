@@ -1,0 +1,6 @@
+display_control.c:17:6:displayInit	24	static
+display_control.c:38:5:open	48	static
+display_control.c:136:6:goBack	32	static
+display_control.c:161:6:update	48	static
+display_control.c:191:6:scrollDown	16	static
+display_control.c:200:6:scrollUp	16	static

@@ -1,1 +1,3 @@
 CS43.c:12:6:CS43_Start	40	static
+CS43.c:81:6:setVolume	40	static
+CS43.c:97:5:mute	16	static

@@ -11,15 +11,48 @@
 int pOpen = 0;
 int mOpen = 0;
 
-FRESULT scanDir(char* path)
+FRESULT scanDir(char* path, char *t[], uint8_t size, uint8_t page)
 {
-	FRESULT result;
-	DIR directory;
+	int i = 0;
+	FRESULT res;
+	DIR dir;
+	static FILINFO fno;
+	volatile int ile = 0;
 
+	res = f_opendir(&dir,path);
+	if(res == FR_OK)
+	{
+		dir.dptr = 0;
+		while(i<size)
+		{
+			res = f_readdir(&dir,&fno);
+			if(res != FR_OK || fno.fname[0] == 0){
+				t[i++]="";
+			}
+			else if(fno.fattrib & AM_SYS) continue;
+			else{
+				t[i] = strdup(fno.fname);
+				i++;
+				if(page > 0 && i == 5)
+				{
+					page--;
+					i=0;
+				}
+				continue;
+			}
+		}
+		if(i<size)
+		{
+
+		}
+	}
+	f_closedir(&dir);
+	return res;
 }
 
 FRESULT openFile(char *fName, FIL* pFile)
 {
+	f_close (pFile);
 	unsigned snl = strlen(fName);
 	FRESULT fResult;
 	UINT r;
@@ -40,6 +73,10 @@ FRESULT openFile(char *fName, FIL* pFile)
 		else if(strcmp(tmp,".txt")==0)
 		{
 			pOpen = 1;
+		}
+		else
+		{
+			return FR_INVALID_PARAMETER;
 		}
 		fResult = f_open(pFile, fName, FA_READ );
 	}
@@ -108,10 +145,14 @@ unsigned long setUp(FIL* pFile, I2S_HandleTypeDef *hi2s3, unsigned *ch)
 	return sdata;
 }
 
+//FRESULT readData(uint16_t *data1, uint16_t *data2, FIL* pFile, unsigned size)
 FRESULT readData(uint16_t *data, FIL* pFile, unsigned size)
 {
 	UINT br;
 	FRESULT fResult = f_read(pFile,data,size,&br);
+
+
+
 	return fResult;
 }
 

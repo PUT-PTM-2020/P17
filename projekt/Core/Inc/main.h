@@ -62,10 +62,16 @@ void Error_Handler(void);
 #define K7_GPIO_Port GPIOA
 #define K6_Pin GPIO_PIN_3
 #define K6_GPIO_Port GPIOA
+#define D_C_Pin GPIO_PIN_4
+#define D_C_GPIO_Port GPIOC
+#define CS_Pin GPIO_PIN_5
+#define CS_GPIO_Port GPIOC
 #define K5_Pin GPIO_PIN_0
 #define K5_GPIO_Port GPIOB
 #define K4_Pin GPIO_PIN_1
 #define K4_GPIO_Port GPIOB
+#define RES_Pin GPIO_PIN_2
+#define RES_GPIO_Port GPIOB
 #define K3_Pin GPIO_PIN_11
 #define K3_GPIO_Port GPIOB
 #define K2_Pin GPIO_PIN_12
