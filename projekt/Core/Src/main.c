@@ -28,6 +28,7 @@
 #include "file_system.h"
 #include "ssd1306.h"
 #include "display_control.h"
+#include "mp3dec.h"
 
 #define K0	!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14)
 #define K1	!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13)
