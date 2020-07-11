@@ -11,6 +11,44 @@
 int pOpen = 0;
 int mOpen = 0;
 
+
+/* do playlist */
+
+int kol_piosenka = 1; /* jako zmienna globalna potem przekazywana do funkcji readPlaylist (zaczynamy liczyć od 1) */
+/* char nazw_play[255] = "p1.txt"; // przykładowa zmienna w której może być zapisana nazwa playlisty */
+/* readPlaylist(kol_piosenka, nazw_play); // przykładowe wywołanie funkcji do odczytania kolejnej piosenki z playlisty */
+
+void readPlaylist(int kol_piosenka, char nazw_play[255]) {
+  FILE * wsk_plik;
+  char buffer[255];
+  int ile_lini = 1;
+
+  if ((wsk_plik = fopen(nazw_play, "r")) != NULL) {
+    //printf("Plik otwarto.\n");
+
+    while (fgets(buffer, 255, wsk_plik) != NULL) {
+
+      if (ile_lini == kol_piosenka) {
+        printf("%s\n", buffer); // do testów czy poprawnie odczytuje nazwe piosenki
+        kol_piosenka = kol_piosenka + 1;
+        ile_lini = 1;
+
+        // teraz buffer trzeba przekazać do innej funkcji, żeby odtworzyła nazwę kolejnej do zagrania piosenki
+        int i = 255;
+        while (i--) ts[i] = buffer[i];
+
+        break;
+      }
+      ile_lini = ile_lini + 1;
+    }
+  }
+
+  fclose(wsk_plik);
+}
+
+/* koniec */
+
+
 FRESULT scanDir(char* path, char *t[], uint8_t size, uint8_t page)
 {
 	int i = 0;
