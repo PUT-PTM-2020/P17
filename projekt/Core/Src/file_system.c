@@ -15,10 +15,54 @@ int mOpen = 0;
 /* do playlist */
 
 int kol_piosenka = 1; /* jako zmienna globalna potem przekazywana do funkcji readPlaylist (zaczynamy liczyć od 1) */
+int liczbaLinii = 0; /* zmienna przechowujaca ile jest linii w pliku z playlista */
 /* char nazw_play[255] = "p1.txt"; // przykładowa zmienna w której może być zapisana nazwa playlisty */
-/* readPlaylist(kol_piosenka, nazw_play); // przykładowe wywołanie funkcji do odczytania kolejnej piosenki z playlisty */
+/* readPlaylist(nazw_play); // przykładowe wywołanie funkcji do odczytania kolejnej piosenki z playlisty */
+/* kolPiosenka(); // wywolanie funkcji od playlist */
 
-void readPlaylist(int kol_piosenka, char nazw_play[255]) {
+
+/* opis:
+ * najpierw wywolywana jest funkcja do sprawdzenia ile jest linii w pliku,
+ * potem jest odczytywana nazwa piosenki do zagrania (przy okazji jest sprawdzane czy
+ * playlista dobiegla do konca jesli tak to jest wlaczana od nowa)
+ *
+ * (1)
+ * Myslalam nad tym, ze playlista by byla grana tak dlugo dopoki nie zostanie naduszony jakis przycisk,
+ * i ze po nacisnieciu tego przycisku nie wlaczy sie kolejna piosenka a ta co byla zostanie odtworzona do konca
+ * (no albo, ze ta co byla tez zostanie przerwana ale to chyba wiecej do roboty by bylo).
+ * Na razie mam stale zapetlenei funkcji zalezne od i, ale mozna od jakiegos przycisku.
+ *
+ * (2)
+ * W tamtym miejscu trzeba dodac funkcje, która odtworzy ta piosenke, ale ja nie wiem ktora to funkcja. */
+
+
+void liczbaLiniiFun(char nazw_play[255]) {
+  FILE * wsk_plik;
+  char buffer[255];
+  if ((wsk_plik = fopen(nazw_play, "r")) != NULL) {
+    while (fgets(buffer, 255, wsk_plik) != NULL) {
+      liczbaLinii = liczbaLinii + 1;
+    }
+  }
+  fclose(wsk_plik);
+}
+
+void kolPiosenka() {
+  int i = 0;
+  liczbaLiniiFun(nazw_play);
+
+  while (i < 9) {						// (1)
+    if (kol_piosenka > liczbaLinii) {
+      kol_piosenka = 1;
+      readPlaylist(nazw_play);
+    } else {
+      readPlaylist(nazw_play);
+    }
+    i = i + 1;							// (1)
+  }
+}
+
+void readPlaylist(char nazw_play[255]) {
   FILE * wsk_plik;
   char buffer[255];
   int ile_lini = 1;
@@ -29,13 +73,15 @@ void readPlaylist(int kol_piosenka, char nazw_play[255]) {
     while (fgets(buffer, 255, wsk_plik) != NULL) {
 
       if (ile_lini == kol_piosenka) {
-        printf("%s\n", buffer); // do testów czy poprawnie odczytuje nazwe piosenki
+        //printf("%s\n", buffer); // do testów czy poprawnie odczytuje nazwe piosenki
         kol_piosenka = kol_piosenka + 1;
         ile_lini = 1;
 
         // teraz buffer trzeba przekazać do innej funkcji, żeby odtworzyła nazwę kolejnej do zagrania piosenki
         int i = 255;
         while (i--) ts[i] = buffer[i];
+
+        // (2)
 
         break;
       }
