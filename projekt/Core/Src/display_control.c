@@ -11,8 +11,11 @@
 #include <string.h>
 
 uint8_t page = 0;
+//aktualne 5 plikow
 char *titles[5];
+//sciezka
 char *dir = "/";
+char currentTitle[50];
 
 void displayInit()
 {
@@ -20,7 +23,7 @@ void displayInit()
 	ssd1306_Fill(White);
 
 	ssd1306_SetCursor(4, 2);
-	ssd1306_WriteString("E:/",Font_6x8,Black);
+	ssd1306_WriteString("0:/",Font_6x8,Black);
 
 	scanDir(dir, titles, 5, page);
 
@@ -42,62 +45,77 @@ int open(uint8_t *pos, FIL* pFile)
 	{
 		if(strcmp(titles[0],"")==0) return 0;
 
+		int st = strlen(dir);
+		char *temp1 = strdup(titles[*pos]);
+		char *temp2 = strdup(dir);
+		char *temp3 = (char*)malloc(strlen(temp2)+strlen(temp1)+2);
+		strcpy(temp3,temp2);
+		if(st>1) strcat(temp3,"/");
+		strcat(temp3,temp1);
+
+		if(openFile(temp3,pFile)==FR_OK)
+		{
+			HAL_Delay(1);
+		}
+		else if (scanDir(temp3, titles, 5, page)==FR_OK)
+		{
+			/*int st = strlen(dir);
+			if(st==1)
+			{
+				dir = (char*)malloc(strlen(dir)+strlen(temp)+1);
+				strcpy(dir,"/");
+				strcat(dir,temp);
+			}
+			else if(st>1)
+			{
+				dir = (char*)malloc(strlen(dir)+strlen(temp)+2);
+				strcat(dir,"/");
+				strcat(dir,temp);
+			}*/
+
+			dir = (char*)malloc(strlen(temp2)+strlen(temp1)+2);
+			strcpy(dir,temp2);
+			if(st>1)strcat(dir,"/");
+			strcat(dir,temp1);
+
+			//*pos = 0;
+			res = 1;
+		}
+		else
+		{
+			//scanDir("/FOLDER2/FOLDER3", titles, 5, page);
+			//*pos = 0;
+			res = 1;
+		}
+	}
+	else
+	{
+		if(*pos=='T')
+		{
+			scanDir(dir, titles, 5, page);
+		}
+		else
+		{
 			int st = strlen(dir);
 			char *temp1 = strdup(titles[*pos]);
 			char *temp2 = strdup(dir);
 			char *temp3 = (char*)malloc(strlen(temp2)+strlen(temp1)+2);
 			strcpy(temp3,temp2);
-			if(st>1)strcat(temp3,"/");
+			if(st>1) strcat(temp3,"/");
 			strcat(temp3,temp1);
-			/*dir = (char*)malloc(strlen(temp2)+strlen(temp1)+2);
-			strcpy(dir,temp2);
-			if(st>1)strcat(dir,"/");
-			strcat(dir,temp1);*/
 
 			if(openFile(temp3,pFile)==FR_OK)
-				{
-
-				}
-				else if (scanDir(temp3, titles, 5, page)==FR_OK)
-				{
-					/*int st = strlen(dir);
-					if(st==1)
-					{
-						dir = (char*)malloc(strlen(dir)+strlen(temp)+1);
-						strcpy(dir,"/");
-						strcat(dir,temp);
-					}
-					else if(st>1)
-					{
-						dir = (char*)malloc(strlen(dir)+strlen(temp)+2);
-						strcat(dir,"/");
-						strcat(dir,temp);
-					}*/
-
-					dir = (char*)malloc(strlen(temp2)+strlen(temp1)+2);
-					strcpy(dir,temp2);
-					if(st>1)strcat(dir,"/");
-					strcat(dir,temp1);
-
-					//*pos = 0;
-					res = 1;
-				}
-				else
-				{
-					//scanDir("/FOLDER2/FOLDER3", titles, 5, page);
-					//*pos = 0;
-					res = 1;
-				}
-
-	}
-	else
-	{
-		if(openFile(dir,pFile)==FR_OK)
 			{
 
 			}
-			else if (scanDir(dir, titles, 5, page)==FR_OK)
+			else if (scanDir(temp3, titles, 5, page)==FR_OK)
 			{
+
+			}
+		}
+
+			//else if (scanDir(temp3, titles, 5, page)==FR_OK)
+			//{
 				/*int st = strlen(dir);
 				if(st==1)
 				{
@@ -119,8 +137,8 @@ int open(uint8_t *pos, FIL* pFile)
 
 				*pos = 0;
 				res = 1;*/
-				res = 1;
-			}
+			//	res = 1;
+			//}
 			/*else
 			{
 				//scanDir("/FOLDER2/FOLDER3", titles, 5, page);
@@ -158,11 +176,11 @@ void goBack(uint8_t *pos)
 	}*/
 }
 
-void update(const uint8_t *pos)
+void update( uint8_t *pos)
 {
-	char *temp = "E:";
+	char *temp = "0:";
 	temp = (char*)malloc(strlen(temp)+strlen(dir)+1);
-	strcpy(temp,"E:");
+	strcpy(temp,"0:");
 	strcat(temp,dir);
 	ssd1306_Fill(White);
 	ssd1306_SetCursor(4, 2);
@@ -179,6 +197,7 @@ void update(const uint8_t *pos)
 		{
 			ssd1306_SetCursor(10, i);
 			ssd1306_WriteString(titles[j],Font_6x8,Black);
+			//if(strcmp(titles[(i/10)-1],"")!=0) *pos = (i/10)-1;
 		}
 		ssd1306_DrawArrowR(3,16+(*pos * 10) ,Black);
 	}
@@ -190,11 +209,15 @@ void update(const uint8_t *pos)
 
 void scrollDown(uint8_t *pos)
 {
-	*pos = *pos + 1;
-	if(*pos==5)
+
+	if(*pos==4)
 	{
 		page++;
 		*pos = 0;
+	}
+	else if(strcmp(titles[*pos+1],"")!=0)
+	{
+		*pos = *pos + 1;
 	}
 }
 void scrollUp(uint8_t *pos)

@@ -28,7 +28,7 @@
 #include "file_system.h"
 #include "ssd1306.h"
 #include "display_control.h"
-#include "mp3dec.h"
+//#include "mp3dec.h"
 
 #define K0	!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14)
 #define K1	!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13)
@@ -73,15 +73,18 @@ DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 char buffer[256];
 static FATFS FatFs;
 FRESULT fresult;
+//obiekt pliku muzycznego
 FIL mfile;
+
 WORD bytes_written;
 WORD bytes_read;
 
 //extern const uint8_t rawAudio[123200];
 
-#define SM	44100
+#define SM	22050
 
-uint16_t audio[SM];
+//uint16_t audio[SM];
+uint32_t ad[SM];
 //uint16_t read[SM];
 uint16_t sample[2];
 
@@ -175,14 +178,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			if(filesize<SM)
 			{
-				HAL_I2S_Transmit_DMA(&hi2s3, audio, filesize);
+				//HAL_I2S_Transmit_DMA(&hi2s3, audio, filesize);
 				filesize = 0;
 			}
 			else
 			{
-				HAL_I2S_Transmit_DMA(&hi2s3, audio, SM);
+				//HAL_I2S_Transmit_DMA(&hi2s3, audio, SM);
 				filesize -= SM;
-				readData(audio, &mfile,SM);
+				//readData(audio, &mfile,SM);
+				readData(ad, &mfile,SM);
 			}
 		}
 	}
@@ -234,7 +238,7 @@ int main(void)
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
 
-  char* ts = "au.wav";
+  char* ts = "AU.WAV";
 
 
 
@@ -279,8 +283,10 @@ int main(void)
 
   	//readData(read,&mfile,SM);
   	//HAL_DMA_Start(&hdma_memtomem_dma2_stream0, *read, *sample, SM);
-  	readData(audio,&mfile,SM);
-  	//readData(read,&mfile,SM);
+
+  	//readData(audio,&mfile,SM);
+  	readData(ad,&mfile,SM*4);
+
     CS43_Start(&hi2c1);
 
     int lll = 0;
@@ -313,14 +319,9 @@ int main(void)
 	  	  {
 	  		if(lll<SM)
 	  			  	{
-	  			  		//HAL_I2S_Transmit(&hi2s3, &audio[lll], 2, 20);
 	  			  		//HAL_I2S_Transmit_DMA(&hi2s3, audio, SM);
-	  			  		HAL_I2S_Transmit_DMA(&hi2s3, audio, SM);
-	  			  		//HAL_I2S_Transmit_DMA(&hi2s3, &audio[lll++], 1);
-	  			  		//HAL_I2S_Transmit_DMA(&hi2s3, &audio[lll++], 1);
+	  					HAL_I2S_Transmit_DMA(&hi2s3, ad, SM);
 	  			  		HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_14);
-	  			  		//HAL_I2S_Transmit_DMA(&hi2s3, &audio[lll], 2);
-	  			  		//HAL_I2S_Transmit(&hi2s3, &audio[lll], 2, 5);
 	  			  		lll+=SM;
 	  			  	}
 	  			  	else
@@ -328,14 +329,15 @@ int main(void)
 	  			  		lll=0;
 	  			  		if(filesize<SM)
 	  					{
-	  						readData(audio,&mfile,filesize);
+	  						readData(ad,&mfile,filesize*4);
+	  						//readData(audio,&mfile,filesize*2);
 	  						filesize=0;
 	  					}
 	  					else
 	  					{
-	  						readData(audio,&mfile,SM);
+	  						//readData(audio,&mfile,SM*2);
+	  						readData(ad,&mfile,SM*4);
 	  						filesize-=SM;
-	  						//HAL_I2S_Transmit_DMA
 	  					}
 	  			  	}
 	  	  }
@@ -401,7 +403,8 @@ int main(void)
 		  if(pr) continue;
 		  pr=1;
 		  //open
-		  if(open(&fpos, &mfile)==1) {
+		  if(open(&fpos, &mfile)==1)
+		  {
 			  fpos=0;
 			  update(&fpos);
 		  }
@@ -421,7 +424,7 @@ int main(void)
 		  pr=1;
 		  scrollDown(&fpos);
 		  if(fpos==0) {
-			  open(&fpos, &mfile);
+			  open(5, &mfile);
 		  }
 		  update(&fpos);
 	  }
