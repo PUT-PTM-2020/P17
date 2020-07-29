@@ -16,5 +16,7 @@ void displayInit();
 void update(uint8_t *pos);
 void scrollDown(uint8_t *pos);
 void scrollUp(uint8_t *pos);
-int open(uint8_t *pos, FIL* pFile);
+int open(const uint8_t *pos, FIL pFile[2]);
 void goBack(uint8_t *pos);
+void updateDir();
+void changeMode(int *mode);

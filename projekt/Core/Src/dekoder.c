@@ -4,7 +4,7 @@
  * Oskar
  */
 
-#include "mp3dec.h"
+/*#include "mp3dec.h"
 
 //inicjalizacja dekodera
 HMP3Decoder mp3decoder;
@@ -46,3 +46,4 @@ offset = MP3FindSyncWord(read_pointer, bytes_left); //znajdz poczatek ramki
 	}
 
 	result = MP3Decode(mp3decoder, &read_pointer,	&bytes_left, out_buffer, 0); //dekodowanie ramki
+*/

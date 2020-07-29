@@ -8,94 +8,16 @@
 #include "file_system.h"
 #include "stm32f4xx_hal.h"
 
+
 int pOpen = 0;
 int mOpen = 0;
 
+//obiekt pliku playlisty
+FIL playlist;
 
-/* do playlist */
-
-int kol_piosenka = 1; /* jako zmienna globalna potem przekazywana do funkcji readPlaylist (zaczynamy liczyć od 1) */
-int liczbaLinii = 0; /* zmienna przechowujaca ile jest linii w pliku z playlista */
-/* char nazw_play[255] = "p1.txt"; // przykładowa zmienna w której może być zapisana nazwa playlisty */
-/* readPlaylist(nazw_play); // przykładowe wywołanie funkcji do odczytania kolejnej piosenki z playlisty */
-/* kolPiosenka(); // wywolanie funkcji od playlist */
-
-
-/* opis:
- * najpierw wywolywana jest funkcja do sprawdzenia ile jest linii w pliku,
- * potem jest odczytywana nazwa piosenki do zagrania (przy okazji jest sprawdzane czy
- * playlista dobiegla do konca jesli tak to jest wlaczana od nowa)
- *
- * (1)
- * Myslalam nad tym, ze playlista by byla grana tak dlugo dopoki nie zostanie naduszony jakis przycisk,
- * i ze po nacisnieciu tego przycisku nie wlaczy sie kolejna piosenka a ta co byla zostanie odtworzona do konca
- * (no albo, ze ta co byla tez zostanie przerwana ale to chyba wiecej do roboty by bylo).
- * Na razie mam stale zapetlenei funkcji zalezne od i, ale mozna od jakiegos przycisku.
- *
- * (2)
- * W tamtym miejscu trzeba dodac funkcje, która odtworzy ta piosenke, ale ja nie wiem ktora to funkcja. */
-
-
-void liczbaLiniiFun(char nazw_play[255]) {
-  FILE * wsk_plik;
-  char buffer[255];
-  if ((wsk_plik = fopen(nazw_play, "r")) != NULL) {
-    while (fgets(buffer, 255, wsk_plik) != NULL) {
-      liczbaLinii = liczbaLinii + 1;
-    }
-  }
-  fclose(wsk_plik);
-}
-
-void kolPiosenka() {
-  int i = 0;
-  liczbaLiniiFun(nazw_play);
-
-  while (i < 9) {						// (1)
-    if (kol_piosenka > liczbaLinii) {
-      kol_piosenka = 1;
-      readPlaylist(nazw_play);
-    } else {
-      readPlaylist(nazw_play);
-    }
-    i = i + 1;							// (1)
-  }
-}
-
-void readPlaylist(char nazw_play[255]) {
-  FILE * wsk_plik;
-  char buffer[255];
-  int ile_lini = 1;
-
-  if ((wsk_plik = fopen(nazw_play, "r")) != NULL) {
-    //printf("Plik otwarto.\n");
-
-    while (fgets(buffer, 255, wsk_plik) != NULL) {
-
-      if (ile_lini == kol_piosenka) {
-        //printf("%s\n", buffer); // do testów czy poprawnie odczytuje nazwe piosenki
-        kol_piosenka = kol_piosenka + 1;
-        ile_lini = 1;
-
-        // teraz buffer trzeba przekazać do innej funkcji, żeby odtworzyła nazwę kolejnej do zagrania piosenki
-        int i = 255;
-        while (i--) ts[i] = buffer[i];
-
-        // (2)
-
-        break;
-      }
-      ile_lini = ile_lini + 1;
-    }
-  }
-
-  fclose(wsk_plik);
-}
-
-/* koniec */
-
-
-FRESULT scanDir(char* path, char *t[], uint8_t size, uint8_t page)
+//tutaj se odczytuje daną lokalizacje/zawartość folderu
+//*t[] tablica tablic czyli tablica stringów z tytułami/nazwami
+FRESULT scanDir(const char* path, char *t[], uint8_t size, uint8_t page)
 {
 	int i = 0;
 	FRESULT res;
@@ -110,16 +32,18 @@ FRESULT scanDir(char* path, char *t[], uint8_t size, uint8_t page)
 		while(i<size)
 		{
 			res = f_readdir(&dir,&fno);
-			if(res != FR_OK || fno.fname[0] == 0){
+			if(res != FR_OK || fno.fname[0] == 0)
+			{
 				t[i++]="";
 			}
 			else if(fno.fattrib & AM_SYS) continue;
-			else{
+			else
+			{
 				t[i] = strdup(fno.fname);
 				i++;
 				if(page > 0 && i == 5)
 				{
-					page--;
+					page=page-1;
 					i=0;
 				}
 				continue;
@@ -134,38 +58,58 @@ FRESULT scanDir(char* path, char *t[], uint8_t size, uint8_t page)
 	return res;
 }
 
-FRESULT openFile(char *fName, FIL* pFile)
+int openMFile(FIL* mFile)
 {
-	f_close (pFile);
+
+}
+
+int openPFile(FIL* pFile)
+{
+	FRESULT fResult;
+
+}
+
+//otwiera plik
+int openFile(char *fName, FIL* pFile)
+{
+
 	unsigned snl = strlen(fName);
 	FRESULT fResult;
 	UINT r;
+
 	if(snl>5)
 	{
 		char tmp[5];
 		//memcpy(tmp,&fName[sizeof(fName)-5],4);
 		memcpy(tmp,&fName[snl-4],4);
 		tmp[4]='\0';
-		if(strcmp(tmp,".wav")==0)
+		if(strcmp(tmp,".WAV")==0)
 		{
 			mOpen = 1;
+			f_close (pFile);
+			fResult = f_open(pFile, fName, FA_READ );
+			return 1;
 		}
-		else if(strcmp(tmp,".mp3")==0)
+		else if(strcmp(tmp,".MP3")==0)
 		{
 			mOpen = 1;
+			f_close (pFile);
+			fResult = f_open(pFile, fName, FA_READ );
+			return 2;
 		}
-		else if(strcmp(tmp,".txt")==0)
+		else if(strcmp(tmp,".TXT")==0)
 		{
 			pOpen = 1;
+			return 3;
 		}
 		else
 		{
-			return FR_INVALID_PARAMETER;
+			return 0;
 		}
-		fResult = f_open(pFile, fName, FA_READ );
+
+		HAL_Delay(1);
 	}
-	else fResult = FR_INVALID_PARAMETER;
-	return fResult;
+	else return 0;
 }
 
 FRESULT closeFile(FIL* pFile)
@@ -174,6 +118,7 @@ FRESULT closeFile(FIL* pFile)
 	return fResult;
 }
 
+//to odczytuje nagłówek .wav i tam ustawienia robi
 unsigned long setUp(FIL* pFile, I2S_HandleTypeDef *hi2s3, unsigned *ch)
 {
 	unsigned br;
@@ -230,7 +175,7 @@ unsigned long setUp(FIL* pFile, I2S_HandleTypeDef *hi2s3, unsigned *ch)
 }
 
 //FRESULT readData(uint16_t *data1, uint16_t *data2, FIL* pFile, unsigned size)
-FRESULT readData(uint16_t *data, FIL* pFile, unsigned size)
+FRESULT readData(uint32_t *data, FIL* pFile, unsigned size)
 {
 	UINT br;
 	FRESULT fResult = f_read(pFile,data,size,&br);
@@ -240,8 +185,62 @@ FRESULT readData(uint16_t *data, FIL* pFile, unsigned size)
 	return fResult;
 }
 
+//fat init
 FRESULT fatInit(FATFS *fat)
 {
 	FRESULT fResult = f_mount(fat, "", 0);
 	return fResult;
 }
+
+
+void createPlaylist()
+{
+	FRESULT fResult;
+	FILINFO fIleinfo;
+
+	int i = 1;
+	char temp1[50] = "/playlists/plist\0";
+	char temp2[50] = "";
+	char temp3[2];
+
+	while(1)
+	{
+		sprintf(temp3,"%i",i);
+		strcpy(temp2,temp1);
+		strcat(temp2,temp3);
+		strcat(temp2,".txt");
+		fResult = f_stat(temp2,&fIleinfo);
+		if(fResult==FR_NO_FILE)
+		{
+			FIL fpl;
+			fResult = f_open(&fpl,temp2,FA_CREATE_NEW);
+			break;
+		}
+		i++;
+	}
+}
+
+void scanPlaylist(const char* path, char *t[], uint8_t size, uint8_t page, FIL *pFile)
+{
+	int i = 0;
+
+
+	char buffer[256]="";
+
+	pFile->fptr = 0;
+	while(i<size)
+	{
+		f_gets(buffer,256,pFile);
+		t[i] = strdup(buffer);
+		i++;
+		if(page>0 && i==5)
+		{
+			page=page-1;
+			i=0;
+		}
+	}
+
+
+}
+
+

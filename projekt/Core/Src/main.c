@@ -73,13 +73,15 @@ DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 char buffer[256];
 static FATFS FatFs;
 FRESULT fresult;
+
 //obiekt pliku muzycznego
 FIL mfile;
+FIL pfile;
+FIL files[2];
 
 WORD bytes_written;
 WORD bytes_read;
 
-//extern const uint8_t rawAudio[123200];
 
 #define SM	22050
 
@@ -98,7 +100,7 @@ int button = 0;
 uint8_t mode = 0;
 uint8_t stop = 0;
 int volume = 50;
-//fs
+
 char* fname = "/";
 uint8_t fpos = 0;
 
@@ -123,69 +125,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		{
 			while(HAL_I2S_GetState(&hi2s3) == HAL_I2S_STATE_BUSY_TX)
 			{}
-
-			/*if(filesize<SM)
-			{
-				//readData(audio,&mfile,filesize);
-				filesize=0;
-			}
-			else
-			{
-				//readData(audio,&mfile,SM);
-				filesize-=SM;
-				//HAL_I2S_Transmit_DMA
-			}*/
-			/*sample[0]=rawAudio[sam];
-			sample[1]=rawAudio[sam];
-			HAL_I2S_Transmit(&hi2s3, sample, 2, 5);
-			sam++;
-			if(sam==123200) sam =0;*/
-
-			/*if(chs==1)
-			{
-				sample[0] = audio[sam];
-				sample[1] = audio[sam];
-				sam++;
-			}
-			else if(chs==2)
-			{
-				sample[0] = audio[sam];
-				sample[1] = audio[sam+1];
-				sam+=2;
-			}
-			if(sam>=SM)
-			{
-				sam=0;
-				filesize-=SM;
-				//HAL_DMA_Start(&hdma_memtomem_dma2_stream0, *read, *sample, SM);
-
-				readData(audio,&mfile,SM);
-				pr++;
-			}
-			if(sam<filesize)
-			{
-
-				HAL_I2S_Transmit(&hi2s3, sample, 2, 5);
-
-				HAL_I2S_Transmit_DMA(&hi2s3, sample, 2);
-
-			}
-			else
-			{
-				filesize = 0;
-				closeFile(&mfile);
-			}*/
-
 			if(filesize<SM)
 			{
-				//HAL_I2S_Transmit_DMA(&hi2s3, audio, filesize);
 				filesize = 0;
 			}
 			else
 			{
-				//HAL_I2S_Transmit_DMA(&hi2s3, audio, SM);
 				filesize -= SM;
-				//readData(audio, &mfile,SM);
 				readData(ad, &mfile,SM);
 			}
 		}
@@ -240,53 +186,16 @@ int main(void)
 
   char* ts = "AU.WAV";
 
-
-
-
   fresult = fatInit(&FatFs);
   HAL_Delay(1);
-  fresult = openFile(ts, &mfile);
+  //fresult = openFile(ts, &mfile);
   HAL_Delay(1);
-  filesize = setUp(&mfile, &hi2s3, &chs);
+  //filesize = setUp(&mfile, &hi2s3, &chs);
   HAL_Delay(1);
 
-	/*HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, 0);
-
-	fresult = f_mount(&FatFs, "", 0);
-	fresult = f_open(&file, "write.txt", FA_OPEN_ALWAYS | FA_WRITE);
-	volatile int len = 0;
-
-
-    FRESULT res;
-    DIR dir;
-    static FILINFO fno;
-    volatile int ile = 0;
-    res = f_opendir(&dir,"/");
-    if(res == FR_OK)
-    {
-    	while(1)
-		{
-			res = f_readdir(&dir,&fno);
-			if(res != FR_OK || fno.fname[0] == 0) break;
-			else if(fno.fattrib & AM_SYS) continue;
-			else ile++;
-			len = sprintf( buffer, "\n");
-			fresult = f_write(&file,buffer,len,&bytes_written);
-			len = sprintf( buffer, fno.fname);
-			fresult = f_write(&file,buffer,len,&bytes_written);
-
-		}
-    }
-    fresult = f_close (&file);
-    volatile int v1 = 1;*/
-
-
-  	//readData(read,&mfile,SM);
-  	//HAL_DMA_Start(&hdma_memtomem_dma2_stream0, *read, *sample, SM);
-
-  	//readData(audio,&mfile,SM);
-  	readData(ad,&mfile,SM*4);
-
+  	//readData(ad,&mfile,SM*4);
+    updateDir();
+    update(&fpos);
     CS43_Start(&hi2c1);
 
     int lll = 0;
@@ -315,124 +224,167 @@ int main(void)
 	  //HAL_I2S_Transmit_DMA(&hi2s3, sample, 2);
 		//while(HAL_I2S_GetState(&hi2s3) == HAL_I2S_STATE_BUSY_TX)
 		//{}
-	  	  if(stop==0)
-	  	  {
-	  		if(lll<SM)
-	  			  	{
-	  			  		//HAL_I2S_Transmit_DMA(&hi2s3, audio, SM);
-	  					HAL_I2S_Transmit_DMA(&hi2s3, ad, SM);
-	  			  		HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_14);
-	  			  		lll+=SM;
-	  			  	}
-	  			  	else
-	  			  	{
-	  			  		lll=0;
-	  			  		if(filesize<SM)
-	  					{
-	  						readData(ad,&mfile,filesize*4);
-	  						//readData(audio,&mfile,filesize*2);
-	  						filesize=0;
-	  					}
-	  					else
-	  					{
-	  						//readData(audio,&mfile,SM*2);
-	  						readData(ad,&mfile,SM*4);
-	  						filesize-=SM;
-	  					}
-	  			  	}
-	  	  }
-
-
-
-	  if(K0)
-	  {
-		  if(pr) continue;
-		  pr=1;
-		  if(fresult!=FR_OK)
-		  {
-			  fresult = fatInit(&FatFs);
-			  displayInit();
-		  }
-		  else
-		  {
-			  mode = (mode+1)%2;
-			  //change mode
-			  fpos = 0;
-			  update(&fpos);
-		  }
-
-	  }
-	  else if(K1)	//stop play
-	  {
-		  HAL_StatusTypeDef status;
-		 if(pr) continue;
-		 pr=1;
-		 stop = (++stop)%2;
-		 if(stop){
-			 while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0F, 1, 253, 1, 100)) != HAL_OK);
-		 }
-		 else{
-			 while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0F, 1, 0, 1, 100)) != HAL_OK);
-			 setVolume(&hi2c1,volume);
-		 }
-	  }
-	  else if(K2)
-	  {
-		  if(pr) continue;
-		  pr=1;
-		  if(volume<100) volume+=10;
-		  setVolume(&hi2c1,volume);
-	  }
-	  else if(K3)
-	  {
-		  if(pr) continue;
-		  pr=1;
-		  if(volume>0) volume-=10;
-		  setVolume(&hi2c1,volume);
-	  }
-	  else if(K4)
-	  {
-		  if(pr) continue;
-		  pr=1;
-		  goBack(&fpos);
-		  fpos=0;
+	if(stop==0)
+	{
+		if(lll<SM)
+		{
+			//HAL_I2S_Transmit_DMA(&hi2s3, audio, SM);
+			HAL_I2S_Transmit_DMA(&hi2s3, ad, SM);
+			HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_14);
+			lll+=SM;
+		}
+		else
+		{
+			lll=0;
+			if(filesize<SM)
+			{
+				readData(ad,&files[0],filesize*4);
+				//readData(audio,&mfile,filesize*2);
+				filesize=0;
+			}
+			else
+			{
+				//readData(audio,&mfile,SM*2);
+				readData(ad,&files[0],SM*4);
+				filesize-=SM;
+			}
+		}
+	}
+	if(K0)
+	{
+		if(pr) continue;
+		pr=1;
+		//mode = (mode+1)%2;
+		changeMode(&mode);
+		update(&fpos);
+		/*if(fresult!=FR_OK)
+		{
+		  fresult = fatInit(&FatFs);
+		  displayInit();
+		}
+		else
+		{
+		  mode = (mode+1)%2;
+		  //change mode
+		  fpos = 0;
 		  update(&fpos);
-	  }
-	  else if(K5)
-	  {
-		  if(pr) continue;
-		  pr=1;
-		  //open
-		  if(open(&fpos, &mfile)==1)
-		  {
-			  fpos=0;
-			  update(&fpos);
-		  }
-	  }
-	  else if(K6)
-	  {
-		  if(pr) continue;
-		  pr=1;
-		  scrollUp(&fpos);
-		  if(fpos==4) open(&fpos, &mfile);
-		  update(&fpos);
-		  HAL_Delay(1);
-	  }
-	  else if(K7)
-	  {
-		  if(pr) continue;
-		  pr=1;
-		  scrollDown(&fpos);
-		  if(fpos==0) {
-			  open(5, &mfile);
-		  }
-		  update(&fpos);
-	  }
-	  else pr=0;
+		}*/
+
+	}
+	else if(K1)	//mode 0 -
+	{
+		HAL_StatusTypeDef status;
+		if(pr) continue;
+		pr=1;
+		stop = (++stop)%2;
+		if(stop)
+		{
+			while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0F, 1, 253, 1, 100)) != HAL_OK);
+		}
+		else
+		{
+			while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0F, 1, 0, 1, 100)) != HAL_OK);
+			setVolume(&hi2c1,volume);
+		}
+	}
+	else if(K2)	//mode 1 volume up || mode 0 create playlist
+	{
+		if(pr) continue;
+		pr=1;
+		if(mode==0)
+		{
+			if(volume<100) volume+=10;
+					setVolume(&hi2c1,volume);
+		}
+		else if (mode==1)
+		{
+			createPlaylist();
+		}
+
+	}
+	else if(K3) //mode 1 volume down || mode 0 delete playlist
+	{
+		if(pr) continue;
+		pr=1;
+		if(mode==0)
+		{
+			if(volume>0) volume-=10;
+			setVolume(&hi2c1,volume);
+		}
 
 
-
-
+	}
+	else if(K4)	//go back
+	{
+		if(pr) continue;
+		pr=1;
+		goBack(&fpos);
+		fpos=0;
+		update(&fpos);
+	}
+	else if(K5)	//open
+	{
+		if(pr) continue;
+		pr=1;
+		//open
+		switch(open(&fpos, files))
+		{
+			case 0:
+				//error
+				break;
+			case 1:
+				filesize = setUp(&files[0], &hi2s3, &chs);
+				readData(ad,&files[0],SM*4);
+				break;
+			case 2:
+				//mp3
+				break;
+			case 3:
+				//playlista
+				//0	-	wyswietl playliste
+				changeView(1);
+				fpos=0;
+				update(&fpos);
+				//
+				break;
+			case 4:
+				//folder
+				fpos=0;
+				updateDir();
+				update(&fpos);
+				break;
+			default:
+				break;
+		}
+		/*if(open(&fpos, &mfile)==1)
+		{
+			fpos=0;
+			update(&fpos);
+		}*/
+	}
+	else if(K6)	//position up
+	{
+		if(pr) continue;
+		pr=1;
+		scrollUp(&fpos);
+		//if(fpos==4) open(5, &mfile);
+		if(fpos==4) updateDir();
+		update(&fpos);
+		HAL_Delay(1);
+	}
+	else if(K7)	//position down
+	{
+		if(pr) continue;
+		pr=1;
+		scrollDown(&fpos);
+		if(fpos==0)
+		{
+			updateDir();
+			//open(5, &mfile);
+		}
+		update(&fpos);
+	}
+	else pr=0;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
