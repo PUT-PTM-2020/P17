@@ -1,49 +1,62 @@
 /*
- * Plik c zawierajacy funkcje zwiazane z dekoderem MP3 do
- * pozniejszego zastosowania w projekcie wraz z opisami
+ * Proces dekodowania wraz objasnieniami i propozycja implementacji
  * Oskar
  */
 
-/*#include "mp3dec.h"
+#include "spiritMP3Dec.h"
+#include <stdio.h>
 
-//inicjalizacja dekodera
-HMP3Decoder mp3decoder;
-mp3decoder = MP3InitDecoder();
+//Wielkosc dekodowanej ramki (podobno najlepiej wielokrotnosc 576)
+#define frame_size_in_samples 576
 
-//bufor odczytujacy
-#define READ_BUFFER_SIZE 2 * MAINBUF_SIZE + 216 //ponad dwa razy wiekszy od bufora dekodera
-unsigned char read_buffer[READ_BUFFER_SIZE];
+//Bufor wychodzacy ze zdekodowanymi danymi
+short PCMSamples [2*frame_size];
 
-//bufor zapisujacy
-#define DECODED_MP3_FRAME_SIZE MAX_NGRAN * MAX_NCHAN * MAX_NSAMP
-#define OUT_BUFFER_SIZE 2 * DECODED_MP3_FRAME_SIZE //rozmiar dwa razy wiekszy od zdekodowanej ramki
-short out_buffer[OUT_BUFFER_SIZE];
+//Dekoder
+TSpiritMP3Decoder MP3Decoder;
 
-int offset; //offset do nastepnego bajtu synchronizujacego
-int result; //wynik dekodowania, 0 = udane, <0 nieudane
+//Funkcja czytajaca dane MP3, wykorzystywana przez dekoder
+unsigned int RetrieveMP3Data (void * MP3CompressedData, unsigned int MP3DataSizeinChars, void * token)
+{
+	return fread(MP3CompressedData, sizeof(char), MP3DataSizeInChars, (FILE*) token);
+}
 
-offset = MP3FindSyncWord(read_pointer, bytes_left); //znajdz poczatek ramki
-	while(offset < 0) //jesli blad, szukaj ponownie
-	{
-		if(refill_inbuffer(mp3_file) != 0)
-		{
-			return END_OF_FILE;
-		}
-		if(bytes_left > 0)
-		{
-			bytes_left -= 1;
-			read_pointer += 1;
-		}
-		offset = MP3FindSyncWord(read_pointer, bytes_left);
+//zawartosc maina u nas bylaby zapewne w petli glownej, albo po "ifie"
+//sprawdzajacym czy odtwarzany plik to .mp3
+void main()
+{
+	unsigned int Samples;
+
+	//u nas zastapiony przez zmienna z nazwa pliku, prawdopodobnie "ts"
+	FILE * MP3file = fopen("plik.mp3","rb");
+
+	//tymczasowy plik wyjsciowy, jezeli dekodujemy calosc przed odczytem
+	//jezeli dekodujemy i odtwarzamy na biezaco mozna usunac
+	FILE * PCMfile = fopen("plik.pcm", "wb");
+
+	//inicjalizacja dekodera
+	SpiritMP3DecoderInit(&MP3Decoder, RetrieveMP3Data, NULL, MP3file);
+
+	//petla dekodujaca
+	do{
+		//dekodowanie do bufora PCMSamples ramki o podanej wielkosci
+		Samples = SpiritMP3Decode(&MP3Decoder, PCMSamples, frame_size_in_samples, NULL);
+
+		//zapis ramki do pliku jesli dekodujemy calosc przed odczytem z drugiego pliku tymczasowego
+		//jezeli robimy to na biezaco to usunac ta linijke
+		//i zastapic funkcja odtwarzajaca zdekodowany bufor PCMSamples
+		fwrite(PCMSamples, 2*sizeof(short), Samples, PCMfile);
 	}
-	read_pointer += offset; //przesun wskaznik odczytu
-	bytes_left -= offset;
-	bytes_left_before_decoding = bytes_left;
+	//powtarzamy dopoki dekodowanie zwraca true, a wiec byly dalej dane do dekodowania
+	while(Samples);
 
-	if (bytes_left < MAINBUF_SIZE) { //jesli trzeba uzupelniamy bufor wejsciowy
-		if(refill_inbuffer(mp3_file) != 0)
-			return END_OF_FILE;
-	}
+	fclose(PCMfile);
+	fclose(MP3file);
 
-	result = MP3Decode(mp3decoder, &read_pointer,	&bytes_left, out_buffer, 0); //dekodowanie ramki
-*/
+	//jezeli dekodujemy calosc przed odczytem, tutaj powinna nastapic zamiana wartosci "ts"
+	//na nowy plik .pcm tak aby przy nastepnym przejsciu petli nie dekodowal jeszcze raz,
+	//a odpalil odtwarzanie nowego pliku
+
+	//ewentualnie w ramach testu ile bedzie trwalo dekodowanie calosci, tutaj ustawic ts=""
+	//i kod odpalajacy diode sygnalizujaca koniec dekodowania
+}
