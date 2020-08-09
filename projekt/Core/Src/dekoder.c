@@ -12,6 +12,15 @@
 //Bufor wychodzacy ze zdekodowanymi danymi
 short PCMSamples [2*frame_size];
 
+//Rozroznienie pierwszej ramki do odczytu informacji do odtwarzania muzyki
+unsigned int first_frame = 0;
+
+//Informacje potrzebne do poprawnego odtworzenia muzyki
+TSpiritMP3Info MP3Info;
+unsigned int FrequencyHz;
+unsigned int BitrateKbps;
+unsigned int Channels;
+
 //Dekoder
 TSpiritMP3Decoder MP3Decoder;
 
@@ -40,8 +49,18 @@ void main()
 	//petla dekodujaca
 	do{
 		//dekodowanie do bufora PCMSamples ramki o podanej wielkosci
-		Samples = SpiritMP3Decode(&MP3Decoder, PCMSamples, frame_size_in_samples, NULL);
+		Samples = SpiritMP3Decode(&MP3Decoder, PCMSamples, frame_size_in_samples, MP3Info);
 
+		//pobranie informacji o pliku, tylko przy pierwszej ramce
+		if (first_frame == 0)
+		{
+			FrequencyHz = MP3Info.nSampleRateHz;
+			BitrateKbps = MP3Info.nBitrateKbps;
+			Channels = MP3Info.nChannels;
+			first_frame = 1;
+
+			//Tutaj powinno nastapic przeslanie parametrow przed odczytaniem danych
+		}
 		//zapis ramki do pliku jesli dekodujemy calosc przed odczytem z drugiego pliku tymczasowego
 		//jezeli robimy to na biezaco to usunac ta linijke
 		//i zastapic funkcja odtwarzajaca zdekodowany bufor PCMSamples
@@ -49,6 +68,9 @@ void main()
 	}
 	//powtarzamy dopoki dekodowanie zwraca true, a wiec byly dalej dane do dekodowania
 	while(Samples);
+
+	//po przetworzeniu calego pliku, resetujemy status pierwszej ramki
+	first_frame = 0;
 
 	fclose(PCMfile);
 	fclose(MP3file);
