@@ -89,20 +89,19 @@ WORD bytes_read;
 uint32_t ad[SM];
 //uint16_t read[SM];
 uint16_t sample[2];
-
 unsigned sam = 0;
-
 volatile unsigned long filesize = 0;
 unsigned chs = 1;
 int pr = 0;
-
 int button = 0;
 uint8_t mode = 0;
 uint8_t stop = 0;
 int volume = 50;
-
 char* fname = "/";
 uint8_t fpos = 0;
+
+uint8_t ifPlaylist = 0;		// do sprawdzenia czy playlista ma zostać utworzona czy ma zostać zakończona jej edycja
+char creatPlayName[50];		// nazwa aktualnie edytowanej playlisty
 
 /* USER CODE END PV */
 
@@ -271,7 +270,7 @@ int main(void)
 		}*/
 
 	}
-	else if(K1)	//mode 0 -
+	else if(K1)			// mode 0 stop/play 	|| mode 1 add song
 	{
 		HAL_StatusTypeDef status;
 		if(pr) continue;
@@ -298,11 +297,30 @@ int main(void)
 		}
 		else if (mode==1)
 		{
-			createPlaylist();
-		}
+			if(ifPlaylist == 0)
+			{
+				ifPlaylist = 1;
+				createPlaylist(&files[1]);
 
+				//creatPlayName = createPlaylist();
+				/// TODO
+				// przechodzimy do głównego folderu
+				// dir = "/"; 
+				updateDir();
+				update(&fpos);
+			}
+			else if(ifPlaylist == 1)
+			{
+				ifPlaylist = 0;		// koniec edycji playlistty 
+				/// TODO
+				// przechodzimy do ścieżki, gdzie znajdują się playlisty
+				// dir = "/playlists/plist\0"; 
+				// updateDir();
+				// update(&fpos);
+			}
+		}
 	}
-	else if(K3) //mode 1 volume down || mode 0 delete playlist
+	else if(K3) 		//mode 1 volume down || mode 0 delete playlist
 	{
 		if(pr) continue;
 		pr=1;
@@ -311,8 +329,10 @@ int main(void)
 			if(volume>0) volume-=10;
 			setVolume(&hi2c1,volume);
 		}
-
-
+		else if(mode == 1)
+		{
+			deletePlaylist(&fpos);
+		}
 	}
 	else if(K4)	//go back
 	{
