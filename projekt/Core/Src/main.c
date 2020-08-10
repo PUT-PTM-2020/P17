@@ -102,6 +102,7 @@ uint8_t fpos = 0;
 
 uint8_t ifPlaylist = 0;		// do sprawdzenia czy playlista ma zostać utworzona czy ma zostać zakończona jej edycja
 char creatPlayName[50];		// nazwa aktualnie edytowanej playlisty
+int nextsong = 1; 
 
 /* USER CODE END PV */
 
