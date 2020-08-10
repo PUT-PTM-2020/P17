@@ -100,9 +100,11 @@ int volume = 50;
 char* fname = "/";
 uint8_t fpos = 0;
 
+/// NEW
 uint8_t ifPlaylist = 0;		// do sprawdzenia czy playlista ma zostać utworzona czy ma zostać zakończona jej edycja
 char creatPlayName[50];		// nazwa aktualnie edytowanej playlisty
-int nextsong = 1; 
+int nextsong = 1;
+/* + EDITED - K1, K2, K3  */
 
 /* USER CODE END PV */
 
@@ -271,23 +273,39 @@ int main(void)
 		}*/
 
 	}
-	else if(K1)			// mode 0 stop/play 	|| mode 1 add song
+	/// NEW
+	else if(K1)				// mode 0 stop/play 	|| mode 1 add song
 	{
-		HAL_StatusTypeDef status;
-		if(pr) continue;
-		pr=1;
-		stop = (++stop)%2;
-		if(stop)
+		if(mode == 0)
 		{
-			while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0F, 1, 253, 1, 100)) != HAL_OK);
+			HAL_StatusTypeDef status;
+			if(pr) continue;
+			pr=1;
+			stop = (++stop)%2;
+			if(stop)
+			{
+				while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0F, 1, 253, 1, 100)) != HAL_OK);  
+			}
+			else
+			{
+				while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0F, 1, 0, 1, 100)) != HAL_OK);
+				setVolume(&hi2c1,volume);
+			}
 		}
-		else
-		{
-			while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0F, 1, 0, 1, 100)) != HAL_OK);
-			setVolume(&hi2c1,volume);
-		}
+		else if (mode == 1)
+		{	/// NEW 
+			if(ifPlaylist == 1)
+			{
+				addSong(&fpos, &files[1]);
+			}
+			else if(ifPlaylist == 0)
+			{
+				//
+			}
+		}	
 	}
-	else if(K2)	//mode 1 volume up || mode 0 create playlist
+	/// NEW
+	else if(K2)				//mode 1 volume up || mode 0 create playlist
 	{
 		if(pr) continue;
 		pr=1;
@@ -312,7 +330,7 @@ int main(void)
 			}
 			else if(ifPlaylist == 1)
 			{
-				ifPlaylist = 0;		// koniec edycji playlistty 
+				ifPlaylist = 0;				// koniec edycji playlistty 
 				/// TODO
 				// przechodzimy do ścieżki, gdzie znajdują się playlisty
 				// dir = "/playlists/plist\0"; 
@@ -321,7 +339,8 @@ int main(void)
 			}
 		}
 	}
-	else if(K3) 		//mode 1 volume down || mode 0 delete playlist
+	/// NEW
+	else if(K3) 		//mode 0 volume down || mode 1 delete playlist 
 	{
 		if(pr) continue;
 		pr=1;
@@ -366,7 +385,9 @@ int main(void)
 				changeView(1);
 				fpos=0;
 				update(&fpos);
-				//
+				ifPlaylist = 0;
+				//tu należy zacząć odtwarzać playliste, przewijanie góra/dół (K6/K7) przewija piosenke
+
 				break;
 			case 4:
 				//folder

@@ -5,6 +5,9 @@
  *      Author: kaper
  */
 
+/* EDITED - funkcja do dodawania piosenek do playlisty, funkcja do usuwania playlisty */
+// linijki: 214-238 
+
 #include "ssd1306.h"
 #include "file_system.h"
 #include "ff.h"
@@ -18,6 +21,7 @@ char *tracks[5];
 char *dir = "/";
 char directory[256] = "/";
 char currentTitle[50];
+
 char currentPlaylist[50];
 extern uint8_t mode;
 uint8_t viewMode;
@@ -82,6 +86,7 @@ int open(const uint8_t *pos, FIL pFile[2])
 			fResult = f_close(&pFile[0]);
 			fResult = f_open(&pFile[0], temp, FA_READ );
 			strcpy(currentTitle,titles[*pos]);
+			strcpy(currentPlaylist,"");
 			res = 1;
 		}
 		else if(strcmp(tmp,".mp3")==0)
@@ -90,6 +95,7 @@ int open(const uint8_t *pos, FIL pFile[2])
 			fResult = f_close(&pFile[0]);
 			fResult = f_open(&pFile[0], temp, FA_READ );
 			strcpy(currentTitle,titles[*pos]);
+			strcpy(currentPlaylist,"");
 			res = 2;
 		}
 		else if(strcmp(tmp,".txt")==0)
@@ -209,6 +215,7 @@ void updateDir()
 	//scanDir(dir,titles,5,page);
 }
 
+/// NEW 
 void deletePlaylist(const uint8_t *pos)
 {
 	FRESULT fResult;
@@ -216,11 +223,12 @@ void deletePlaylist(const uint8_t *pos)
 	strcpy(temp,directory);
 	strcat(temp,"/");
 	strcat(temp,titles[*pos]);
-    	fResult = f_unlink(temp); 		// usunięcie playlisty
+    fResult = f_unlink(temp); 		// usunięcie playlisty
 	updateDir();
 	update(pos);
 }
 
+/// NEW 
 void addSong(const uint8_t *pos, FIL *pFile)
 {	
 	UINT bw;
@@ -229,9 +237,24 @@ void addSong(const uint8_t *pos, FIL *pFile)
 	char temp[256]="";
 	strcpy(temp,directory);
 	strcat(temp,titles[*pos]);
+	
+	int snl = strlen(titles[*pos]);
 
-	fResult = f_write(pFile,temp,strlen(temp),&bw);
-	fResult = f_write(pFile,"\n",1,bw);
+	char tmp[5];
+	memcpy(tmp,&titles[*pos][snl-4],4);
+	tmp[4]='\0';
+	if(strcmp(tmp,".wav") || strcmp(tmp,".mp3"))
+	{
+		fResult = f_write(pFile,temp,strlen(temp),&bw);
+		fResult = f_write(pFile,"\n",1,bw);
+	}
+	//char playDir[256];
+	//stpcpy(playDir, "/playlists/plist\0");
+	//strcat(playDir, playName);
+	//FILE *plik;
+	//plik = fopen(playDir, temp);	// wpisanie do playlisty piosenki
+	//f_write(pFile,titles[*pos],strlen(titles[*pos]),bw);
+
 }
 
 void goBack(uint8_t *pos)
@@ -269,7 +292,7 @@ void goBack(uint8_t *pos)
 	}*/
 }
 
-void update( uint8_t *pos)
+void update(uint8_t *pos)
 {
 	char *temp = "F:";
 	//temp = (char*)malloc(strlen(temp)+strlen(dir)+1);
@@ -315,12 +338,36 @@ void update( uint8_t *pos)
 		}
 		else
 		{
+			char temp2[50]="";
+			char temp3[100]="";
 			for(int i = 15,j=0;i<=55;i+=10,j++)
 			{
+				strcpy(temp2,"");
 				ssd1306_SetCursor(10, i);
 
-				ssd1306_WriteString(tracks[j],Font_6x8,Black);
+				int s = strlen(tracks[j]);
+				strcpy(temp3,tracks[j]);
 
+				for(int k=s;k>=0;k--)
+				{
+					if(temp3[k]=='/')
+					{
+						//char *str;
+						//if(k>0)
+						//{
+							memcpy(temp2,&temp3[k+1],s-1-k);
+						//}
+						//else directory[i+1] = '\0';
+						//memmove(dir,dir,s);
+						//scanDir(directory, titles, 5, page);
+						//scanDir(dir, titles, 5, page);
+						//HAL_Delay(1);
+						break;
+					}
+				}
+
+				ssd1306_WriteString(temp2,Font_6x8,Black);
+				//ssd1306_WriteString(tracks[j],Font_6x8,Black);
 				//if(strcmp(titles[(i/10)-1],"")!=0) *pos = (i/10)-1;
 			}
 			ssd1306_DrawArrowR(3,16+(*pos * 10) ,Black);
