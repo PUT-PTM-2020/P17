@@ -32,4 +32,10 @@ FRESULT fatInit(FATFS *FatFs);
 void createPlaylist();
 
 //to samo co scandir
-void scanPlaylist(const char* path, char *t[], uint8_t size, uint8_t page, FIL *pFile);
+void scanPlaylist(char *t[], uint8_t size, uint8_t page, FIL *pFile);
+
+void howLinesFun();
+
+void nextSong(int * nextsong);
+
+void readPlaylist(int * nextsong);

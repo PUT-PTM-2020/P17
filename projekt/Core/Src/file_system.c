@@ -19,6 +19,7 @@ int howLines = 0; // ile linii w playliście
 
 //tutaj se odczytuje daną lokalizacje/zawartość folderu
 //*t[] tablica tablic czyli tablica stringów z tytułami/nazwami
+///działa
 FRESULT scanDir(const char* path, char *t[], uint8_t size, uint8_t page)
 {
 	int i = 0;
@@ -72,6 +73,7 @@ int openPFile(FIL* pFile)
 }
 
 //otwiera plik
+///działa
 int openFile(char *fName, FIL* pFile)
 {
 
@@ -114,13 +116,15 @@ int openFile(char *fName, FIL* pFile)
 	else return 0;
 }
 
+///działa
 FRESULT closeFile(FIL* pFile)
 {
 	FRESULT fResult = f_close (&pFile);
 	return fResult;
 }
 
-//to odczytuje nagłówek .wav i tam ustawienia robi
+//to odczytuje nagłówek .wav i tam ustawienia robi //wav
+///działa
 unsigned long setUp(FIL* pFile, I2S_HandleTypeDef *hi2s3, unsigned *ch)
 {
 	unsigned br;
@@ -177,6 +181,8 @@ unsigned long setUp(FIL* pFile, I2S_HandleTypeDef *hi2s3, unsigned *ch)
 }
 
 //FRESULT readData(uint16_t *data1, uint16_t *data2, FIL* pFile, unsigned size)
+///	dotyczy wav
+///działa
 FRESULT readData(uint32_t *data, FIL* pFile, unsigned size)
 {
 	UINT br;
@@ -188,13 +194,15 @@ FRESULT readData(uint32_t *data, FIL* pFile, unsigned size)
 }
 
 //fat init
+///działa
 FRESULT fatInit(FATFS *fat)
 {
 	FRESULT fResult = f_mount(fat, "", 0);
 	return fResult;
 }
 
-
+//tworzy plik playlisty i go otwiera
+///działa
 void createPlaylist(FIL *pFile)
 {
 	FRESULT fResult;
@@ -224,54 +232,67 @@ void createPlaylist(FIL *pFile)
 }
 
 // ile lini zawiera playlista
-void howLinesFun() {
-  FILE * wsk_plik;
-  char buffer[255];
-  if ((wsk_plik = fopen(currentPlaylist, "r")) != NULL) {
-    while (fgets(buffer, 255, wsk_plik) != NULL) {
-      howLines = howLines + 1;
-    }
-  }
-  fclose(wsk_plik);
+///działa
+void howLinesFun()
+{
+	FIL * wsk_plik;
+	char buffer[255];
+	howLines = 0;
+	if ((wsk_plik = f_open(currentPlaylist, FA_READ)) == FR_OK)
+	{
+		while (f_gets(buffer, 255, wsk_plik) != NULL)
+		{
+			howLines = howLines + 1;
+		}
+		f_close(wsk_plik);
+	}
+
 }
 
 // jaka nastepna piosenka
-void nextSong(int * nextsong) {
-  int i = 0;
-  howLinesFun();
+void nextSong(int * nextsong)
+{
+	int i = 0;
+	//howLinesFun();
 
-  while (1) {			
-    if (nextsong > howLines) {
-      nextsong = 1;
-      readPlaylist(currentPlaylist);
-    } else {
-      readPlaylist(currentPlaylist);
-    }
-    i = i + 1;					
-  }
+	while (1)
+	{
+		if (nextsong > howLines)
+		{
+			nextsong = 1;
+			readPlaylist(currentPlaylist);
+		}
+		else
+		{
+			readPlaylist(currentPlaylist);
+		}
+		i = i + 1;
+	}
 }
 
 // odczytywanie playlisty
-void readPlaylist(int * nextsong) {
-  FILE * wsk_plik;
-  char buffer[50];
-  int ile_lini = 1;
+void readPlaylist(int * nextsong)
+{
+	FILE * wsk_plik;
+	char buffer[50];
+	int ile_lini = 1;
 
-  //if ((wsk_plik = fopen(currentPlaylist, "r")) != NULL) {
-  if ((openFile(currentPlaylist, playlist) != NULL) {  
-    while (fgets(buffer, 50, wsk_plik) != NULL) {
-
-      if (ile_lini == nextsong) {
-        nextsong = nextsong + 1;
-        ile_lini = 1;
-	openFile(buffer);
-		
-        break;
-      }
-      ile_lini = ile_lini + 1;
-    }
-  }
-  fclose(wsk_plik);
+	//if ((wsk_plik = fopen(currentPlaylist, "r")) != NULL) {
+	if (openFile(currentPlaylist, playlist) != NULL)
+	{
+		while (fgets(buffer, 50, wsk_plik) != NULL)
+		{
+			if (ile_lini == nextsong)
+			{
+				nextsong = nextsong + 1;
+				ile_lini = 1;
+				openFile(buffer);
+				break;
+			}
+			ile_lini = ile_lini + 1;
+		}
+	}
+	f_close(wsk_plik);
 }
 
 void scanPlaylist(const char* path, char *t[], uint8_t size, uint8_t page, FIL *pFile)

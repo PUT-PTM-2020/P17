@@ -20,3 +20,6 @@ int open(const uint8_t *pos, FIL pFile[2]);
 void goBack(uint8_t *pos);
 void updateDir();
 void changeMode(int *mode);
+void changeView(int x);
+void addSong(const uint8_t *pos, FIL *pFile);
+void deletePlaylist(const uint8_t *pos);

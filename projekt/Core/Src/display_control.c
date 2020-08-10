@@ -103,7 +103,8 @@ int open(const uint8_t *pos, FIL pFile[2])
 			//playlista
 			fResult = f_close(&pFile[1]);
 			fResult = f_open(&pFile[1], temp, FA_READ );
-			strcpy(currentPlaylist,titles[*pos]);
+			strcpy(currentPlaylist,"/playlists/");
+			strcat(currentPlaylist,titles[*pos]);
 			scanPlaylist(tracks, 5, page, &pFile[1]);
 			//*pos=0;
 			res = 3;
@@ -223,9 +224,16 @@ void deletePlaylist(const uint8_t *pos)
 	strcpy(temp,directory);
 	strcat(temp,"/");
 	strcat(temp,titles[*pos]);
-    fResult = f_unlink(temp); 		// usunięcie playlisty
-	updateDir();
-	update(pos);
+
+	char tmp[5];
+	memcpy(tmp,&titles[*pos][snl-4],4);
+	tmp[4]='\0';
+	if(strcmp(tmp,".txt"))
+	{
+		fResult = f_unlink(temp); 		// usunięcie playlisty
+		updateDir();
+		update(pos);
+	}
 }
 
 /// NEW 
