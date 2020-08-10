@@ -14,6 +14,7 @@ int mOpen = 0;
 
 //obiekt pliku playlisty
 FIL playlist;
+extern char currentPlaylist[50];
 
 //tutaj se odczytuje daną lokalizacje/zawartość folderu
 //*t[] tablica tablic czyli tablica stringów z tytułami/nazwami
@@ -193,7 +194,7 @@ FRESULT fatInit(FATFS *fat)
 }
 
 
-void createPlaylist()
+void createPlaylist(FIL *pFile)
 {
 	FRESULT fResult;
 	FILINFO fIleinfo;
@@ -214,6 +215,7 @@ void createPlaylist()
 		{
 			FIL fpl;
 			fResult = f_open(&fpl,temp2,FA_CREATE_NEW);
+			strcpy(currentPlaylist,temp2);
 			break;
 		}
 		i++;
