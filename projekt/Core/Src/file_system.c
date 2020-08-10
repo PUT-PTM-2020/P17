@@ -15,6 +15,7 @@ int mOpen = 0;
 //obiekt pliku playlisty
 FIL playlist;
 extern char currentPlaylist[50];
+int howLines = 0; // ile linii w playliście
 
 //tutaj se odczytuje daną lokalizacje/zawartość folderu
 //*t[] tablica tablic czyli tablica stringów z tytułami/nazwami
@@ -220,6 +221,57 @@ void createPlaylist(FIL *pFile)
 		}
 		i++;
 	}
+}
+
+// ile lini zawiera playlista
+void howLinesFun() {
+  FILE * wsk_plik;
+  char buffer[255];
+  if ((wsk_plik = fopen(currentPlaylist, "r")) != NULL) {
+    while (fgets(buffer, 255, wsk_plik) != NULL) {
+      howLines = howLines + 1;
+    }
+  }
+  fclose(wsk_plik);
+}
+
+// jaka nastepna piosenka
+void nextSong(int * nextsong) {
+  int i = 0;
+  howLinesFun();
+
+  while (1) {			
+    if (nextsong > howLines) {
+      nextsong = 1;
+      readPlaylist(currentPlaylist);
+    } else {
+      readPlaylist(currentPlaylist);
+    }
+    i = i + 1;					
+  }
+}
+
+// odczytywanie playlisty
+void readPlaylist(int * nextsong) {
+  FILE * wsk_plik;
+  char buffer[50];
+  int ile_lini = 1;
+
+  //if ((wsk_plik = fopen(currentPlaylist, "r")) != NULL) {
+  if ((openFile(currentPlaylist, playlist) != NULL) {  
+    while (fgets(buffer, 50, wsk_plik) != NULL) {
+
+      if (ile_lini == nextsong) {
+        nextsong = nextsong + 1;
+        ile_lini = 1;
+	openFile(buffer);
+		
+        break;
+      }
+      ile_lini = ile_lini + 1;
+    }
+  }
+  fclose(wsk_plik);
 }
 
 void scanPlaylist(const char* path, char *t[], uint8_t size, uint8_t page, FIL *pFile)
