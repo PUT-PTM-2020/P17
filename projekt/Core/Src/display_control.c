@@ -98,6 +98,7 @@ int open(const uint8_t *pos, FIL pFile[2])
 			fResult = f_close(&pFile[1]);
 			fResult = f_open(&pFile[1], temp, FA_READ );
 			strcpy(currentPlaylist,titles[*pos]);
+			scanPlaylist(tracks, 5, page, &pFile[1]);
 			//*pos=0;
 			res = 3;
 		}
@@ -207,9 +208,30 @@ void updateDir()
 	scanDir(directory,titles,5,page);
 	//scanDir(dir,titles,5,page);
 }
-void updatePList()
-{
 
+void deletePlaylist(const uint8_t *pos)
+{
+	FRESULT fResult;
+	char temp[256]="";
+	strcpy(temp,directory);
+	strcat(temp,"/");
+	strcat(temp,titles[*pos]);
+    	fResult = f_unlink(temp); 		// usunięcie playlisty
+	updateDir();
+	update(pos);
+}
+
+void addSong(const uint8_t *pos, FIL *pFile)
+{	
+	UINT bw;
+	UINT bww;
+	FRESULT fResult;
+	char temp[256]="";
+	strcpy(temp,directory);
+	strcat(temp,titles[*pos]);
+
+	fResult = f_write(pFile,temp,strlen(temp),&bw);
+	fResult = f_write(pFile,"\n",1,bw);
 }
 
 void goBack(uint8_t *pos)
