@@ -215,6 +215,10 @@ void updateDir()
 	scanDir(directory,titles,5,page);
 	//scanDir(dir,titles,5,page);
 }
+void updatePL(FIL *pFile)
+{
+	scanPlaylist(tracks, 5, page, pFile);
+}
 
 /// NEW 
 void deletePlaylist(const uint8_t *pos)

@@ -229,6 +229,8 @@ int main(void)
 			if(playPlaylist)
 			{
 				//kolejna piosenka
+				nextsong++;
+				readPlaylist(&nextsong, files[2]);
 			}
 			else
 			{
@@ -445,9 +447,11 @@ int main(void)
 					fpos=0;
 					update(&fpos);
 					ifPlaylist = 0;
-					playPlaylist = 1;	//zaczyna odtwarzanie playlisty
 					//tu należy zacząć odtwarzać playliste, przewijanie góra/dół (K6/K7) przewija piosenke
-					howLinesFun(&files[1]);	//liczy ile jest piosenek
+					if(howLinesFun(&files[1])>0)	//liczy ile jest piosenek
+					{
+						playPlaylist = 1;	//zaczyna odtwarzanie playlisty
+					}
 					forceFile(&fpos,&files[0]);	//otwórz pierwszą piosenke z pl
 
 
@@ -476,7 +480,11 @@ int main(void)
 		pr=1;
 		scrollUp(&fpos);
 		//if(fpos==4) open(5, &mfile);
-		if(fpos==4) updateDir();
+		if(fpos==4)
+		{
+			updateDir();
+			updatePL(&files[1]);
+		}
 		update(&fpos);
 		HAL_Delay(1);
 	}
@@ -488,6 +496,7 @@ int main(void)
 		if(fpos==0)
 		{
 			updateDir();
+			updatePL(&files[1]);
 			//open(5, &mfile);
 		}
 		update(&fpos);

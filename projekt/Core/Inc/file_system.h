@@ -34,7 +34,7 @@ void createPlaylist();
 //to samo co scandir
 void scanPlaylist(char *t[], uint8_t size, uint8_t page, FIL *pFile);
 
-void howLinesFun(FIL *pFile);
+int howLinesFun(FIL *pFile);
 
 void nextSong(int * nextsong);
 
