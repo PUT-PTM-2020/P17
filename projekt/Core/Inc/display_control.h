@@ -23,3 +23,4 @@ void changeMode(int *mode);
 void changeView(int x);
 void addSong(const uint8_t *pos, FIL *pFile);
 void deletePlaylist(const uint8_t *pos);
+int forceFile(int *pos, FIL* pFile);

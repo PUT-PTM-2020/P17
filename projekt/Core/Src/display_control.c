@@ -225,10 +225,13 @@ void deletePlaylist(const uint8_t *pos)
 	strcat(temp,"/");
 	strcat(temp,titles[*pos]);
 
+	int test = 0;
+
 	char tmp[5];
+	int snl = strlen(titles[*pos]);
 	memcpy(tmp,&titles[*pos][snl-4],4);
 	tmp[4]='\0';
-	if(strcmp(tmp,".txt"))
+	if(test = strcmp(tmp,".txt\0")==0)
 	{
 		fResult = f_unlink(temp); 		// usunięcie playlisty
 		updateDir();
@@ -436,4 +439,35 @@ void changeView(int x)
 {
 	page = 0;
 	viewMode = x;
+}
+
+//otwarcie dowolnego pliku w wyznaczonej ścieżce
+int forceFile(int *pos, FIL* pFile)
+{
+	FRESULT fResult;
+	int res = 0;
+
+	fResult = f_open(pFile,tracks[*pos],FA_READ);
+	if(fResult == FR_OK)
+	{
+		int snl = strlen(tracks[*pos]);
+		char tmp[5];
+		memcpy(tmp,&tracks[*pos][snl-4],4);
+		tmp[4]='\0';
+		if(strcmp(tmp,".wav")==1)
+		{
+			res = 1;
+		}
+		else if(strcmp(tmp,".mp3")==1)
+		{
+			res = 2;
+		}
+	}
+	return res;
+}
+
+//skok do wyznaczonej lokalizacji
+void forceDir(char* fDir)
+{
+	strcpy(directory,fDir);
 }

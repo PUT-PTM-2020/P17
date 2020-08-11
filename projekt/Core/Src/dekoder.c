@@ -10,7 +10,7 @@
 #define frame_size_in_samples 576
 
 //Bufor wychodzacy ze zdekodowanymi danymi
-short PCMSamples [2*frame_size];
+short PCMSamples [2*frame_size_in_samples];
 
 //Rozroznienie pierwszej ramki do odczytu informacji do odtwarzania muzyki
 unsigned int first_frame = 0;
@@ -25,14 +25,14 @@ unsigned int Channels;
 TSpiritMP3Decoder MP3Decoder;
 
 //Funkcja czytajaca dane MP3, wykorzystywana przez dekoder
-unsigned int RetrieveMP3Data (void * MP3CompressedData, unsigned int MP3DataSizeinChars, void * token)
+unsigned int RetrieveMP3Data (void * MP3CompressedData, unsigned int MP3DataSizeInChars, void * token)
 {
-	return fread(MP3CompressedData, sizeof(char), MP3DataSizeInChars, (FILE*) token);
+	return f_read(MP3CompressedData, sizeof(char), MP3DataSizeInChars, (FILE*) token);
 }
 
 //zawartosc maina u nas bylaby zapewne w petli glownej, albo po "ifie"
 //sprawdzajacym czy odtwarzany plik to .mp3
-void main()
+/*void main()
 {
 	unsigned int Samples;
 
@@ -49,7 +49,7 @@ void main()
 	//petla dekodujaca
 	do{
 		//dekodowanie do bufora PCMSamples ramki o podanej wielkosci
-		Samples = SpiritMP3Decode(&MP3Decoder, PCMSamples, frame_size_in_samples, MP3Info);
+		//Samples = SpiritMP3Decode(&MP3Decoder, PCMSamples, frame_size_in_samples, MP3Info);
 
 		//pobranie informacji o pliku, tylko przy pierwszej ramce
 		if (first_frame == 0)
@@ -81,4 +81,4 @@ void main()
 
 	//ewentualnie w ramach testu ile bedzie trwalo dekodowanie calosci, tutaj ustawic ts=""
 	//i kod odpalajacy diode sygnalizujaca koniec dekodowania
-}
+}*/

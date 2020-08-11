@@ -223,7 +223,8 @@ void createPlaylist(FIL *pFile)
 		if(fResult==FR_NO_FILE)
 		{
 			FIL fpl;
-			fResult = f_open(&fpl,temp2,FA_CREATE_NEW);
+			fResult = f_open(pFile,temp2,FA_CREATE_NEW | FA_WRITE | FA_READ);
+			//fResult f_close()
 			strcpy(currentPlaylist,temp2);
 			break;
 		}
@@ -233,20 +234,24 @@ void createPlaylist(FIL *pFile)
 
 // ile lini zawiera playlista
 ///działa
-void howLinesFun()
+void howLinesFun(FIL *pFile)
 {
-	FIL * wsk_plik;
-	char buffer[255];
+	//FIL * wsk_plik;
+	FRESULT fResult;
+	char buffer[255]="";
 	howLines = 0;
-	if ((wsk_plik = f_open(currentPlaylist, FA_READ)) == FR_OK)
-	{
-		while (f_gets(buffer, 255, wsk_plik) != NULL)
+	f_lseek(pFile,0);
+	//if ((wsk_plik = f_open(currentPlaylist, FA_READ)) == FR_OK)
+	//{
+		while (f_gets(buffer, 255, pFile) != '\0')
 		{
 			howLines = howLines + 1;
+			strcpy(buffer,"");
 		}
-		f_close(wsk_plik);
-	}
-
+		f_lseek(pFile,0);
+		//f_close(wsk_plik);
+	//}
+	 //ustawia wskaźnik na początek pliku
 }
 
 // jaka nastepna piosenka
@@ -273,12 +278,12 @@ void nextSong(int * nextsong)
 // odczytywanie playlisty
 void readPlaylist(int * nextsong)
 {
-	FILE * wsk_plik;
+	FIL * wsk_plik;
 	char buffer[50];
 	int ile_lini = 1;
 
 	//if ((wsk_plik = fopen(currentPlaylist, "r")) != NULL) {
-	if (openFile(currentPlaylist, playlist) != NULL)
+	/*if (openFile(currentPlaylist, playlist) != NULL)
 	{
 		while (fgets(buffer, 50, wsk_plik) != NULL)
 		{
@@ -292,17 +297,17 @@ void readPlaylist(int * nextsong)
 			ile_lini = ile_lini + 1;
 		}
 	}
-	f_close(wsk_plik);
+	f_close(wsk_plik);*/
 }
 
-void scanPlaylist(const char* path, char *t[], uint8_t size, uint8_t page, FIL *pFile)
+void scanPlaylist(char *t[], uint8_t size, uint8_t page, FIL *pFile)
 {
 	int i = 0;
 
 
 	char buffer[256]="";
 
-	pFile->fptr = 0;
+	f_lseek(pFile,0);
 	while(i<size)
 	{
 		f_gets(buffer,256,pFile);

@@ -100,10 +100,14 @@ int volume = 50;
 char* fname = "/";
 uint8_t fpos = 0;
 
+int playType = 0;	//0 - nic	1 - wav		2 - mp3
+int playPlaylist = 0;	//0	- pojedyncza piosenka	1 - playlista włączona i piosenki pokolei z playlisty
+
 /// NEW
 uint8_t ifPlaylist = 0;		// do sprawdzenia czy playlista ma zostać utworzona czy ma zostać zakończona jej edycja
 char creatPlayName[50];		// nazwa aktualnie edytowanej playlisty
-int nextsong = 1;
+int nextsong = 1;			//numer piosenki z playlisty
+
 /* + EDITED - K1, K2, K3  */
 
 /* USER CODE END PV */
@@ -214,20 +218,57 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	  /*v1 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14);
-	  if(!v1)
-	  {
-		  HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_14);
-	  }
-	  v1=1;
-	  HAL_Delay(500);*/
-
-	  //HAL_I2S_Transmit_DMA(&hi2s3, sample, 2);
-		//while(HAL_I2S_GetState(&hi2s3) == HAL_I2S_STATE_BUSY_TX)
-		//{}
 	if(stop==0)
 	{
+		switch(playType)
+		{
+		case 0:;
+			//nic nie gra
+			uint16_t emptyData = 0;
+			HAL_I2S_Transmit_DMA(&hi2s3, &emptyData, 2);
+			if(playPlaylist)
+			{
+				//kolejna piosenka
+			}
+			else
+			{
+				stop=1;
+			}
+			break;
+		case 1:	//wav
+			if(filesize>0)
+			{
+				/*if(filesize<SM)
+				{
+					readData(ad,&files[0],filesize*2);
+					HAL_I2S_Transmit_DMA(&hi2s3, ad, filesize);
+				}
+				else
+				{
+					readData(ad,&files[0],SM*2);
+					HAL_I2S_Transmit_DMA(&hi2s3, ad, SM);
+				}*/
+
+			}
+			else
+			{
+				playType = 0;	//zakończ odtwarzanie
+			}
+			break;
+		case 2: //mp3
+			if(1==1)
+			{
+				//gra muzyka
+			}
+			else
+			{
+				playType = 0; 	//zakończ odtwarzanie
+			}
+			break;
+		default:
+			break;
+		}
+
 		if(lll<SM)
 		{
 			//HAL_I2S_Transmit_DMA(&hi2s3, audio, SM);
@@ -257,6 +298,7 @@ int main(void)
 		if(pr) continue;
 		pr=1;
 		//mode = (mode+1)%2;
+		if(ifPlaylist) ifPlaylist = 0;
 		changeMode(&mode);
 		update(&fpos);
 		/*if(fresult!=FR_OK)
@@ -328,15 +370,17 @@ int main(void)
 				updateDir();
 				update(&fpos);
 			}
-			else if(ifPlaylist == 1)
+			/*else if(ifPlaylist == 1)
 			{
 				ifPlaylist = 0;				// koniec edycji playlistty 
 				/// TODO
+				forceDir("/playlists");
+				fpos = 0;
 				// przechodzimy do ścieżki, gdzie znajdują się playlisty
 				// dir = "/playlists/plist\0"; 
-				// updateDir();
-				// update(&fpos);
-			}
+				 updateDir();
+				 update(&fpos);
+			}*/
 		}
 	}
 	/// NEW
@@ -359,6 +403,11 @@ int main(void)
 		if(pr) continue;
 		pr=1;
 		goBack(&fpos);
+		if(playPlaylist)
+		{
+			playPlaylist = 0;
+			changeView(0);
+		}
 		fpos=0;
 		update(&fpos);
 	}
@@ -367,37 +416,54 @@ int main(void)
 		if(pr) continue;
 		pr=1;
 		//open
-		switch(open(&fpos, files))
+		if(playPlaylist==0)	//jeżeli playlista nie jest otwarta - nie odtwarza się
 		{
-			case 0:
-				//error
-				break;
-			case 1:
-				filesize = setUp(&files[0], &hi2s3, &chs);
-				readData(ad,&files[0],SM*4);
-				break;
-			case 2:
-				//mp3
-				break;
-			case 3:
-				//playlista
-				//0	-	wyswietl playliste
-				changeView(1);
-				fpos=0;
-				update(&fpos);
-				ifPlaylist = 0;
-				//tu należy zacząć odtwarzać playliste, przewijanie góra/dół (K6/K7) przewija piosenke
+			switch(open(&fpos, files))
+			{
+				case 0:
+					//error
 
-				break;
-			case 4:
-				//folder
-				fpos=0;
-				updateDir();
-				update(&fpos);
-				break;
-			default:
-				break;
+					break;
+				case 1:
+					//wav
+					filesize = setUp(&files[0], &hi2s3, &chs);
+					readData(ad,&files[0],SM*4);
+					playType = 1;
+					stop=0;
+
+					break;
+				case 2:
+					//mp3
+					playType = 2;
+					stop=0;
+
+					break;
+				case 3:
+					//playlista
+					//0	-	wyswietl playliste
+					changeView(1);
+					fpos=0;
+					update(&fpos);
+					ifPlaylist = 0;
+					playPlaylist = 1;	//zaczyna odtwarzanie playlisty
+					//tu należy zacząć odtwarzać playliste, przewijanie góra/dół (K6/K7) przewija piosenke
+					howLinesFun(&files[1]);	//liczy ile jest piosenek
+					forceFile(&fpos,&files[0]);	//otwórz pierwszą piosenke z pl
+
+
+					break;
+				case 4:
+					//folder
+					fpos=0;
+					updateDir();
+					update(&fpos);
+
+					break;
+				default:
+					break;
+			}
 		}
+
 		/*if(open(&fpos, &mfile)==1)
 		{
 			fpos=0;
