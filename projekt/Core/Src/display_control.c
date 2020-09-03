@@ -9,6 +9,7 @@
 #include "file_system.h"
 #include "ff.h"
 #include <string.h>
+#include <stdio.h>
 
 uint8_t page = 0;
 //aktualne 5 plikow
@@ -41,7 +42,87 @@ void displayInit()
 int open(uint8_t *pos, FIL* pFile)
 {
 	int res = 0;
+<<<<<<< Updated upstream
 	if(page==0)
+=======
+
+	char temp[256];
+	strcpy(temp,directory);
+	if(strlen(temp)>1) strcat(temp,"/");
+	strcat(temp,titles[*pos]);
+	/*int st = strlen(dir);
+	char *temp = NULL;
+	if(st>1) *temp = (char*)malloc(strlen(dir)+strlen(titles[*pos])+2);
+
+	strcpy(temp,dir);
+	if(st>1) strcat(temp,"/");
+	strcat(temp,titles[*pos]);
+	strcat(temp,'\0');*/
+
+	/*char *temp1 = strdup(titles[*pos]);
+	char *temp2 = strdup(dir);
+	char *temp3 = (char*)malloc(strlen(temp2)+strlen(temp1)+2);
+	strcpy(temp3,temp2);
+	if(st>1) strcat(temp3,"/");
+	strcat(temp3,temp1);*/
+
+	if(snl>5)
+	{
+		char tmp[5];
+		memcpy(tmp,&titles[*pos][snl-4],4);
+		tmp[4]='\0';
+		if(strcmp(tmp,".wav")==0)
+		{
+			//wav
+			fResult = f_close(&pFile[0]);
+			fResult = f_open(&pFile[0], temp, FA_READ );
+			strcpy(currentTitle,titles[*pos]);
+			strcpy(currentPlaylist,"");
+			res = 1;
+		}
+		else if(strcmp(tmp,".mp3")==0)
+		{
+			//mp3
+			fResult = f_close(&pFile[0]);
+			//closemp3();
+			//MP3Init(temp);
+			//*mFile = fopen(temp,"rb");
+			//fResult = f_open(&pFile[0], temp, FA_READ );
+			strcpy(currentTitle,titles[*pos]);
+			strcpy(currentPlaylist,"");
+			res = 2;
+		}
+		else if(strcmp(tmp,".txt")==0)
+		{
+			//playlista
+			fResult = f_close(&pFile[1]);
+			fResult = f_open(&pFile[1], temp, FA_READ );
+			strcpy(currentPlaylist,"/playlists/");
+			strcat(currentPlaylist,titles[*pos]);
+			scanPlaylist(tracks, 5, page, &pFile[1]);
+			//*pos=0;
+			res = 3;
+		}
+		else
+		{
+			if(strcmp(titles[*pos],"")!=0)
+			{
+				strcpy(directory,temp);
+			}
+			page = 0;
+			//folder
+			/*dir = (char*)malloc(strlen(temp));
+			strcpy(dir,temp);
+			int ddd = strlen(dir);*/
+			//dir[strlen(dir)] = '\0';
+			res = 4;
+		}
+	}
+	return res;
+
+
+	/*if(page==0)
+>>>>>>> Stashed changes
 	{
 		if(strcmp(titles[0],"")==0) return 0;
 
@@ -236,3 +317,52 @@ void scrollUp(uint8_t *pos)
 		}
 	}
 }
+<<<<<<< Updated upstream
+=======
+
+void changeMode(int *mode)
+{
+	*mode=(*mode+1)%2;
+}
+void changeView(int x)
+{
+	page = 0;
+	viewMode = x;
+}
+
+//otwarcie dowolnego pliku w wyznaczonej ścieżce
+int forceFile(uint8_t *pos, FIL* pFile)
+{
+	FRESULT fResult;
+	int res = 0;
+	fResult = f_close(pFile);
+	fResult = f_open(pFile,tracks[*pos],FA_READ);
+	if(fResult == FR_OK)
+	{
+		int snl = strlen(tracks[*pos]);
+		char tmp[5];
+		memcpy(tmp,&tracks[*pos][snl-4],4);
+		tmp[4]='\0';
+		if(strcmp(tmp,".wav")==0)
+		{
+			res = 1;
+		}
+		else if(strcmp(tmp,".mp3")==0)
+		{
+			res = 2;
+		}
+	}
+	return res;
+}
+
+//skok do wyznaczonej lokalizacji
+void forceDir(char* fDir)
+{
+	strcpy(directory,fDir);
+}
+void resetPL(uint8_t *pos)
+{
+	page = 0;
+	*pos = 0;
+}
+>>>>>>> Stashed changes

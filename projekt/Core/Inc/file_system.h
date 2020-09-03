@@ -27,3 +27,18 @@ FRESULT readData(uint16_t* data, FIL* pFile, unsigned size);
 //FRESULT readData(uint16_t* data1, uint16_t *data2, FIL* pFile, unsigned size);
 
 FRESULT fatInit(FATFS *FatFs);
+<<<<<<< Updated upstream
+=======
+
+//tworzy playliste w folderze playlist
+void createPlaylist();
+
+//to samo co scandir
+void scanPlaylist(char *t[], uint8_t size, uint8_t page, FIL *pFile);
+
+int howLinesFun(FIL *pFile);
+
+void nextSong(int * nextsong);
+
+//void readPlaylist(int * nextsong);
+>>>>>>> Stashed changes

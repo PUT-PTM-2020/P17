@@ -28,7 +28,12 @@
 #include "file_system.h"
 #include "ssd1306.h"
 #include "display_control.h"
+<<<<<<< Updated upstream
 //#include "mp3dec.h"
+=======
+#include <stdio.h>
+//#include "spiritMP3Dec.h"
+>>>>>>> Stashed changes
 
 #define K0	!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14)
 #define K1	!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13)
@@ -79,7 +84,11 @@ FIL mfile;
 WORD bytes_written;
 WORD bytes_read;
 
+<<<<<<< Updated upstream
 //extern const uint8_t rawAudio[123200];
+=======
+HAL_I2S_StateTypeDef hresult;
+>>>>>>> Stashed changes
 
 #define SM	22050
 
@@ -238,16 +247,22 @@ int main(void)
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
 
-  char* ts = "AU.WAV";
+  char* ts = "au.wav";
 
 
 
 
   fresult = fatInit(&FatFs);
   HAL_Delay(1);
+<<<<<<< Updated upstream
   fresult = openFile(ts, &mfile);
   HAL_Delay(1);
   filesize = setUp(&mfile, &hi2s3, &chs);
+=======
+  //fresult = openFile(ts, &files[0]);
+  HAL_Delay(1);
+  //filesize = setUp(&files[0], &hi2s3, &chs);
+>>>>>>> Stashed changes
   HAL_Delay(1);
 
 	/*HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, 0);
@@ -303,6 +318,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+<<<<<<< Updated upstream
 
 	  /*v1 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14);
 	  if(!v1)
@@ -426,13 +442,329 @@ int main(void)
 		  if(fpos==0) {
 			  open(5, &mfile);
 		  }
+=======
+	if(stop==0)
+	{
+		switch(playType)
+		{
+		case 0:;
+			//nic nie gra
+			HAL_StatusTypeDef status;
+			//uint16_t emptyData = 0;
+			//HAL_I2S_Transmit_DMA(&hi2s3, &emptyData, 1);
+			//while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0F, 1, 253, 1, 100)) != HAL_OK);
+			if(playPlaylist)
+			{
+				//kolejna piosenka
+				nextsong++;
+				int temppos = fpos;
+				scrollDown(&fpos);
+				if(temppos == fpos)
+				{
+
+				}
+				else
+				{
+
+				}
+				update(&fpos);
+				playType = forceFile(&fpos, &files[0]);
+				//readPlaylist(&nextsong, files[2]);
+			}
+			else
+			{
+				for(int i=0;i<SM;i++)
+				{
+					ad[i]=0;
+				}
+				//HAL_I2S_Transmit_DMA(&hi2s3, &ad,SM);
+				stop=1;
+			}
+			break;
+		case 1:	//wav
+			if(filesize>0)
+			{
+				if(filesize<SM)
+				{
+					readData(ad,&files[0],filesize*4);
+					//while((hresult = HAL_I2S_Transmit_DMA(&hi2s3, ad, filesize))!=HAL_OK);
+					hresult = HAL_I2S_Transmit_DMA(&hi2s3, ad, filesize);
+				}
+				else
+				{
+					readData(ad,&files[0],SM*4);
+					//while((hresult = HAL_I2S_Transmit_DMA(&hi2s3, ad, SM))!=HAL_OK);
+					hresult = HAL_I2S_Transmit_DMA(&hi2s3, ad, SM*4);
+				}
+
+			}
+			else
+			{
+				playType = 0;	//zakończ odtwarzanie
+			}
+			break;
+		case 2: //mp3
+			if(1==1)
+			{
+				//gra muzyka
+			}
+			else
+			{
+				playType = 0; 	//zakończ odtwarzanie
+			}
+			break;
+		default:
+			break;
+		}
+
+		/*if(lll<SM)
+		{
+			//HAL_I2S_Transmit_DMA(&hi2s3, audio, SM);
+			HAL_I2S_Transmit_DMA(&hi2s3, ad, SM);
+			HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_14);
+			lll+=SM;
+		}
+		else
+		{
+			lll=0;
+			if(filesize<SM)
+			{
+				readData(ad,&files[0],filesize*4);
+				//readData(audio,&mfile,filesize*2);
+				filesize=0;
+			}
+			else
+			{
+				//readData(audio,&mfile,SM*2);
+				readData(ad,&files[0],SM*4);
+				filesize-=SM;
+			}
+		}*/
+	}
+	if(K0)
+	{
+		if(pr) continue;
+		pr=1;
+		//mode = (mode+1)%2;
+		if(ifPlaylist) ifPlaylist = 0;
+		changeMode(&mode);
+		update(&fpos);
+		/*if(fresult!=FR_OK)
+		{
+		  fresult = fatInit(&FatFs);
+		  displayInit();
+		}
+		else
+		{
+		  mode = (mode+1)%2;
+		  //change mode
+		  fpos = 0;
+>>>>>>> Stashed changes
 		  update(&fpos);
 	  }
 	  else pr=0;
 
 
 
+<<<<<<< Updated upstream
 
+=======
+	}
+	/// NEW
+	else if(K1)				// mode 0 stop/play 	|| mode 1 add song
+	{
+		if(mode == 0)
+		{
+			HAL_StatusTypeDef status;
+			if(pr) continue;
+			pr=1;
+			stop = (++stop)%2;
+			if(stop)
+			{
+				while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0F, 1, 253, 1, 100)) != HAL_OK);  
+			}
+			else
+			{
+				while ((status = HAL_I2C_Mem_Write(&hi2c1, 0x94, 0x0F, 1, 0, 1, 100)) != HAL_OK);
+				setVolume(&hi2c1,volume);
+			}
+		}
+		else if (mode == 1)
+		{	/// NEW 
+			if(ifPlaylist == 1)
+			{
+				addSong(&fpos, &files[1]);
+				HAL_Delay(600);
+			}
+			else if(ifPlaylist == 0)
+			{
+				//
+			}
+		}	
+	}
+	/// NEW
+	else if(K2)				//mode 1 volume up || mode 0 create playlist
+	{
+		if(pr) continue;
+		pr=1;
+		if(mode==0)
+		{
+			if(volume<100) volume+=10;
+					setVolume(&hi2c1,volume);
+		}
+		else if (mode==1)
+		{
+			if(ifPlaylist == 0)
+			{
+				ifPlaylist = 1;
+				createPlaylist(&files[1]);
+
+				//creatPlayName = createPlaylist();
+				/// TODO
+				// przechodzimy do głównego folderu
+				// dir = "/"; 
+				updateDir();
+				update(&fpos);
+			}
+			/*else if(ifPlaylist == 1)
+			{
+				ifPlaylist = 0;				// koniec edycji playlistty 
+				/// TODO
+				forceDir("/playlists");
+				fpos = 0;
+				// przechodzimy do ścieżki, gdzie znajdują się playlisty
+				// dir = "/playlists/plist\0"; 
+				 updateDir();
+				 update(&fpos);
+			}*/
+		}
+	}
+	/// NEW
+	else if(K3) 		//mode 0 volume down || mode 1 delete playlist 
+	{
+		if(pr) continue;
+		pr=1;
+		if(mode==0)
+		{
+			if(volume>0) volume-=10;
+			setVolume(&hi2c1,volume);
+		}
+		else if(mode == 1)
+		{
+			deletePlaylist(&fpos);
+		}
+	}
+	else if(K4)	//go back
+	{
+		if(pr) continue;
+		pr=1;
+		goBack(&fpos);
+		if(playPlaylist)
+		{
+			playPlaylist = 0;
+			changeView(0);
+		}
+		fpos=0;
+		update(&fpos);
+	}
+	else if(K5)	//open
+	{
+		if(pr) continue;
+		pr=1;
+		//open
+		if(playPlaylist==0)	//jeżeli playlista nie jest otwarta - nie odtwarza się
+		{
+			switch(open(&fpos, files))
+			{
+				case 0:
+					//error
+
+					break;
+				case 1:
+					//wav
+					filesize = setUp(&files[0], &hi2s3, &chs);
+					readData(ad,&files[0],SM*4);
+					//HAL_I2S_Transmit_DMA(&hi2s3, ad, SM*2);
+					playType = 1;
+					stop=0;
+
+					break;
+				case 2:
+					//mp3
+					//brak nie działa
+
+
+					playType = 2;
+					stop=0;
+
+					break;
+				case 3:
+					//playlista
+					//0	-	wyswietl playliste
+					changeView(1);
+					fpos=0;
+					update(&fpos);
+					ifPlaylist = 0;
+					//tu należy zacząć odtwarzać playliste, przewijanie góra/dół (K6/K7) przewija piosenke
+					if(howLinesFun(&files[1])>0)	//liczy ile jest piosenek
+					{
+						playPlaylist = 1;	//zaczyna odtwarzanie playlisty
+					}
+					forceFile(&fpos,&files[0]);	//otwórz pierwszą piosenke z pl
+					filesize = setUp(&files[0], &hi2s3, &chs);
+					playType = 1;
+					stop = 0;
+
+					break;
+				case 4:
+					//folder
+					fpos=0;
+					updateDir();
+					update(&fpos);
+
+					break;
+				default:
+					break;
+			}
+		}
+
+		/*if(open(&fpos, &mfile)==1)
+		{
+			fpos=0;
+			update(&fpos);
+		}*/
+	}
+	else if(K6)	//position up
+	{
+		if(pr) continue;
+		pr=1;
+		scrollUp(&fpos);
+		//if(fpos==4) open(5, &mfile);
+		if(fpos==4)
+		{
+			updateDir();
+			updatePL(&files[1]);
+		}
+		if(playPlaylist)forceFile(&fpos,&files[0]);
+		update(&fpos);
+		HAL_Delay(1);
+	}
+	else if(K7)	//position down
+	{
+		if(pr) continue;
+		pr=1;
+		scrollDown(&fpos);
+		if(fpos==0)
+		{
+			updateDir();
+			updatePL(&files[1]);
+			//open(5, &mfile);
+		}
+		if(playPlaylist)forceFile(&fpos,&files[0]);
+		update(&fpos);
+	}
+	else pr=0;
+>>>>>>> Stashed changes
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
